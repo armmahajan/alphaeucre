@@ -107,6 +107,13 @@ class Euchre:
         self.deck = self._createCards()
         self.rankedCards = []
 
+    def registerCallback(self, playerID, callback):
+        '''
+        Register a different callback for the player with playerID. A sample callback function
+        is self._humanPlayer.
+        '''
+        self.players[playerID] = callback
+
     def _humanPlayer(self, state) -> int | bool | str:
         match state['phase']:
             case 'trumpFaceUp':

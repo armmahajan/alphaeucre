@@ -172,6 +172,7 @@ class Euchre:
 
     def _trumpNamingFaceUp(self) -> tuple[bool, int]:
         self.state['trump'] = self.deck.pop()
+        self.state['cards_played'].extend(self.state['trump'])
         for i in range(4):
             if self.players[(self.state['leader']+i)%4](self._gameStatePlayersView(i)):
                 self.state['trump'] = self.state['trump'].suit
@@ -332,6 +333,11 @@ class Euchre:
                 self.state['leader'] = trick_winner
                 print(f"Trick winner is {trick_winner}")
                 print(f"Current Points:\n{self.state['trick_points']}")
+
+                # Move played cards to the cards_played and reset current_trick
+                self.state['cards_played'].extend([v for _, v in self.state['current_trick'].items()])
+                for k in self.state['current_trick']:
+                    self.state['current_trick'][k] = None
                 if self._isGameOver(): 
                     break
             print('Games Over!')

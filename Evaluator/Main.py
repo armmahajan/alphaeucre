@@ -8,11 +8,10 @@ class Main:
         self.games = [[]]
 
     def simulate(self, games):
-        for game in games:
-            logger = Logger("euchre_log.txt")
-            print("Start Simulation")
-            evaluator = Evaluation(games[0][0], games[0][1], games[0][2], games[0][3], games[1], logger)
-            evaluator.initiate()
+        logger = Logger("euchre_log.txt")
+        print("Start Simulation")
+        evaluator = Evaluation(games[0][0], games[0][1], games[0][2], games[0][3], games[1], logger)
+        evaluator.initiate()
 
     def run_auto(self, games):
         main_instance = Main()

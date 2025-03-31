@@ -3,44 +3,45 @@ from Evaluator.MinMaxTree import Tree
 
 class Logger:
     def __init__(self, filename="game_log.txt"):
-        #self.tree = Tree()
-        self.filename = filename
-        self.logs = []
+        self.tree = Tree()  # MinMaxTree to manage game states
 
     # Create log
-    def log_hand(self, trump, history, winner, score, trick):
-        print("Saving Hand")
-        self.logs.append({
+    def log_hand(self, trump, winner, score, history):
+        """
+        Add a trick to the current setup and feed the logs to the tree for dynamic updates.
+
+        Args:
+            trump (str): The current trump suit (e.g., "D", "H").
+            winner (int): The ID of the team/player who won this setup.
+            score (list): Scores for both teams, e.g., [2, 3].
+            history (list): List of tuples representing cards played (e.g., [("SQ", 0), ("DJ", 1)]).
+        """
+        log = {
             "trump": trump,
-            "history": history,
             "winner": winner,
             "score": score,
-            "trick": trick
-        })
-
-    # Write to JSON
-    def save_logs(self):
-        print("Writing Logs")
-
-        #for log in enumerate(self.logs):
-            #tree.ingest(log)
+            "history": history,
+        }
+        self.tree.ingest_log(log)  # Send log to tree
+        #print(f"Logged trick: {log}")
 
 
-
-        # Write to JSON file
-        with open(self.filename, "w") as f:
-            # Print logs in a readable format
-            f.write("\n=== Trick History ===\n")
-            for i, log in enumerate(self.logs):
-                f.write(f"\nTrick {i + 1} (Trump: {log['trump']}, Winner: {log['winner']}, Score: {log['score']}, Trick: {log['trick']})\n")
-                for play in log["history"]:
-                    trick_str = " | ".join([f"{card} (P{player % 4})" for card, player in play])
-                    trick_str += '\n'
-                    f.writelines(trick_str)
-                f.write("\n" + "-" * 50)  # Separator between tricks
+    def view_tree(self, file_path):
+        """
+        Displays the current structure of the game tree.
+        """
+        self.tree.print_tree(file_path)
 
 
-    # Clears log
-    # Runs if hand is obsolete
-    def clear_logs(self):
-        self.logs = []
+    def minmax(self):
+        """
+        Finds the best next step for the given team based on the MinMax algorithm.
+
+        Args:
+            maximizing_team (bool): True for maximizing player/team, False for minimizing.
+
+        Returns:
+            dict: The best move (or game state node) found by MinMax.
+        """
+        print(f"Calculating best moves for each team...")
+        return self.tree.minmax_roots()

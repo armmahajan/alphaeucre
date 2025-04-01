@@ -1,4 +1,5 @@
 import copy
+from importlib.metadata import distribution
 
 
 class Node:
@@ -42,6 +43,8 @@ class Tree:
         self.best_path = []
         self.best_score = 0
         self.suboptimal_path = []
+        self.win_count = 0
+        self.end_states = 0
 
     # Take a log, create a node and add to the tree
     def ingest_log(self, log):
@@ -85,14 +88,65 @@ class Tree:
                 previous_node = node
 
 
-    def evaluate(self, node):
-        # Could evaluate on hand control as well
-        #   Immediate and future hand control
-        # Additionally could include leaf win dispersion ratio -> would be in _find_best()
-        return node.score[0] - node.score[1]  # Difference between the teams
+    def evaluate(self, child, team, path):
+        self.win_count = 0
+        self.end_states = 0
+
+        root_node = path[0]
+        imm_control = 0
+        future_control = 0
+        if root_node.child_has_child():
+            for child in root_node.children:
+                grand_child = child.get_child()[0]
+                if int(grand_child.cards[0][5]) % 2 == int(child.cards[0][5]) % 2:
+                    if int(child.cards[0][5]) % 2 == 0:
+                        imm_control += 1
+                    else:
+                        imm_control -= 1
+                for grand_grandchild in grand_child.children:
+                    if int(grand_grandchild.cards[0][5]) % 2 == int(grand_child.cards[0][5]) % 2:
+                        if int(grand_grandchild.cards[0][5]) % 2 == 0:
+                            future_control += 1
+                        else:
+                            future_control -= 1
+            imm_control /= len(root_node.children)
+            future_control /= sum(len(child.children) for child in root_node.children)
+
+            imm_control *= 1.2
+            future_control *= 0.8
+        else:
+            imm_control = 0.9
+            future_control = 0.5
+
+        # Get win ratio and dispersion metrics
+        self._get_win_ratio(root_node)
+        win_ratio = self.win_count / self.end_states
+        #dispersion_penalty = self._get_win_dispersion(root_node)
+
+        # Dynamic weighting
+        depth_weight = max(0.45, 1 - len(path) / 7)
+        control_weight = 1 - depth_weight
+
+        # Final evaluation
+        score_component = (child.score[0] - child.score[1]) * win_ratio * depth_weight
+        control_component = (imm_control + future_control) * control_weight
+        #balance_component = -dispersion_penalty * 0.1
+
+        #return strategy_multiplier * (score_component + control_component + balance_component)
+        return score_component + control_component
 
 
-    def minmax_roots(self, max_depth=5):
+    def _get_win_ratio(self, node):
+            if not node.children:
+                self.win_count += node.score[0] - node.score[1]
+                self.end_states += 1
+                return
+
+            for child in node.children:
+                self._get_win_ratio(child)
+
+
+    def minmax_roots(self):
         best_game_paths = []
 
         # Iterate through all possible roots
@@ -157,7 +211,7 @@ class Tree:
             else:
                 # Iterate through all children and evaluate their game state
                 for child in node.children:
-                    score = self.evaluate(child)
+                    score = self.evaluate(child, team, path + [node])
                     # If team 0 maximizing and score beats best score
                     if team == 0:
                         if score > self.best_score:
@@ -170,27 +224,3 @@ class Tree:
                             self.best_score = score
                             self.best_path = path + [node] + [child]
                         self.suboptimal_path = path + [node] + [child]
-
-
-    def print_tree(self, file_path):
-        # Open file for writing
-        with open(file_path, "w") as file:
-            file.write("Game Tree:\n")
-            # For root print tree
-            for idx, root in enumerate(self.roots, start=1):
-                file.write(f"Root {idx}: {root}\n")  # Write root info
-                self._print_children(root, file, level=1)
-
-            file.close()
-
-    def _print_children(self, node, file, level):
-        # For child, print child
-        for child1 in node.children:
-            file.write(f"{' ' * (2 * level)}-> {child1}\n")
-        # For child, find all children
-        for child2 in copy.deepcopy(node.children):
-            file.write(f"{' ' * (2 * level)}-> Exploring: {child2}\n")
-            self._print_children(child2, file, level + 1)
-
-
-

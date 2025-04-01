@@ -40,20 +40,17 @@ class Evaluation:
                 print("Error: Invalid setup")
             self.reset_ranks()
 
-            # Getting tree of possible card games
-            print("\n\n*********** All Possible Game States Tree ***********\n\n")
-
-            self.logger.view_tree(f"GameState - {setup[0]} {setup[1]} {i}.txt")
-
             # MinMax Tree to get best move set
             print("\n\n*********** MinMax Tree ***********\n\n")
-            games = self.logger.minmax()
+            games = self.logger.minmax_trees()
+
+            lead_results = []
 
             for j, game in enumerate(games):
                 print(f"\n\n*********** Best Game for Tree: {j} ***********\n\n")
                 print(game)
 
-        print("Completed all setup options.")
+        print("Completed all setup options")
 
 
     def valid_setups(self):
@@ -119,14 +116,11 @@ class Evaluation:
             in_play.append(move)
             #new_hands[new_lead].remove(move)
 
-            # Update card ranks based on card led
-            new_cards = self.update_ranks(move)
-
             zero_index = 0
             # Determine legal moves of remaining players
             for k in range(new_lead + 1, new_lead + 4):
                 index = k % 4
-                player_legal_moves[index] = self.legal_moves(hands[index], move[0])
+                player_legal_moves[index] = self.legal_moves(hands[index], move)
                 #print("Recorded Legal Moves: ", player_legal_moves[index])
                 # For combination generation
                 to_follow_legal_moves[zero_index] = player_legal_moves[index]
@@ -154,6 +148,8 @@ class Evaluation:
                 for k, card in enumerate(in_play):
                     new_hands[(k + new_lead) % 4].remove(card)
 
+                # Update card ranks based on card led
+                new_cards = self.update_ranks(in_play[0])
                 # Evaluate the winner
                 winner = self.win_play(in_play)
                 #print("Winner: ", winner)
@@ -316,15 +312,44 @@ class Evaluation:
         if trump == '':
             return hand
 
+        # Determine the left bower based on the trump suit
+        left_bower = self.get_left_bower(self.trump)
+
+        if trump == left_bower:
+            trump = self.trump
+        else:
+            trump = trump[0]
+
         legal_moves = []
-        for card in hand:
-            if card[0] == trump:
-                legal_moves.append(card)
+        if trump == self.trump:
+            for card in hand:
+                if card[0] == trump or card == left_bower:
+                    legal_moves.append(card)
+        else:
+            for card in hand:
+                if card[0] == trump and card != left_bower:
+                    legal_moves.append(card)
 
         if len(legal_moves) == 0:
             legal_moves = hand
 
         return legal_moves
+
+
+    def get_left_bower(self, trump):
+        # Hearts: Left bower is Jack of Diamonds
+        if trump == 'H':
+            return 'DJ'
+        # Diamonds: Left bower is Jack of Hearts
+        elif trump == 'D':
+            return 'HJ'
+        # Spades: Left bower is Jack of Clubs
+        elif trump == 'S':
+            return 'CJ'
+        # Clubs: Left bower is Jack of Spades
+        elif trump == 'C':
+            return 'SJ'
+        return None
 
 
     # Converts all hand's trump into the highest rank
@@ -363,7 +388,9 @@ class Evaluation:
         # Update ranks based on card led
         for card in self.cards.keys():
             # If suit is not already boosted
-            if self.cards[card] < 7 and card[0] == led:
+            if self.cards[card] > 7 and card[0] == led:
+                continue
+            elif self.cards[card] < 7 and card[0] == led:
                 self.cards[card] += 6
             # Devaluing past suits
             elif self.cards[card] > 6 and card[0] != self.trump and self.cards[card] != 19:
@@ -383,7 +410,6 @@ class Evaluation:
     def win_play(self, in_play):
         values = [0, 0, 0, 0]
         for i, card in enumerate(in_play):
-            #print("Checking Cards Win: ", card)
             for value in self.cards.keys():
                 if card == value:
                     values[i] = self.cards[value]

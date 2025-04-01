@@ -119,8 +119,14 @@ class Euchre:
             case 'trumpFaceUp':
                 print(f'Your hand: {state["cards"]}')
                 print(f'Trump Offering (faceup): {state['trump']}')
-                res = input('Take the trump offering (y/n): ')
-                return True if res == 'y' else False
+                complete = False
+                while not complete:
+                    res = input('Take the trump offering (y/n): ')
+                    if res.upper() not in ['Y', 'N']:
+                        print('Invalid input. Please enter y or n.')
+                        continue
+                    else:
+                        return True if res.lower() == 'y' else False
             # case 'trumpFaceDown':
             #     options = state['trump']
             #     print(f'Your hand: {state["cards"]}')
@@ -134,8 +140,14 @@ class Euchre:
             case 'trick':
                 print(f'Your hand: {state['cards']}')
                 print(f'Current Trick: {state['current_trick']}')
-                res = input(f'Which card would you like to play (0-indexed)? ')
-                return int(res)
+                complete = False
+                while not complete:
+                    res = input(f'Which card would you like to play (0-indexed)? ')
+                    if int(res) > len(state['cards']) - 1 or int(res) < 0:
+                        print('Invalid input. Please enter a valid card index.')
+                        continue
+                    else:
+                        return int(res)
             case _:
                 raise ValueError('Game state phase has an invalid value.')
     
@@ -156,6 +168,8 @@ class Euchre:
             for _ in range(2):
                 players_cards.append(self.deck.pop())
             self.state['cards'][(self.state['dealer']+i+1)%4].extend(players_cards)
+
+        print(f"Cards Dealt: {self.state['cards']}")
 
     def _gameStatePlayersView(self, playerID: int) -> dict:
         # Filter cards
@@ -193,7 +207,70 @@ class Euchre:
     #     for i in range(4):
     #         res = self.players[(self.state['leader']+i+1)%4](self._gameStatePlayersView(i))
     #         # TODO: handle res and force the dealer
-    
+
+    def _discard(self):
+        hand = [[], [], [], []]
+        ranks = [["9", 1], ["10", 2], ["J", 3], ["Q", 4], ["K", 5], ["A", 6]]
+        makes = list({"hearts", "diamonds", "spades", "clubs"} - {self.state['trump']})
+        low_one_suit = ["", 10]
+        low = ["", 10]
+        low_trump = ["", 10]
+
+        # Iterating through dealers cards
+        for card in self.state['cards'][self.state['dealer']]:
+            # Matching suits togethers
+            if card.suit != self.state['trump']:
+                if card.suit == makes[0]:
+                    hand[0].append(card)
+                elif card.suit == makes[1]:
+                    hand[1].append(card)
+                elif card.suit == makes[2]:
+                    hand[2].append(card)
+            else:
+                hand[3].append(card)
+        # Iterating through collections of suits
+        for suit in hand:
+            # If there is exactly one card of a suit
+            if len(suit) == 1 and suit[0].suit != self.state['trump']:
+                for value in ranks:
+                    if suit[0].value == value[0]:
+                        # If card value is lower than previously saved value
+                        if value[1] < low_one_suit[1]:
+                            low_one_suit = [suit[0], value[1]]
+            # If there exists cards in suit
+            elif len(suit) != 0:
+                for card in suit:
+                    # Iterate through card ranks to match card
+                    for value in ranks:
+                        # Keep trump suit separate
+                        if suit != hand[3]:
+                            # If card value is lower than previously saved value
+                            if card.value == value[0]:
+                                if value[1] < low[1]:
+                                    low = [card, value[1]]
+                        # If card value is lower than previously saved value
+                        elif card.value == value[0] and card.suit == self.state['trump']:
+                            low_trump = [card, value[1]]
+        # If card of single suit is lower than a King, discard -> add trump -> return hand
+        if low_one_suit[1] <= 4:
+            new_hand = list(self.state['cards'][self.state['dealer']])
+            new_hand.append(self.state['cards_played'][0])
+            new_hand.remove(low_one_suit[0])
+            return new_hand
+        # Else lowest card of non-trump suit, discard -> add trump -> return hand
+        elif low[1] < 8:
+            new_hand = list(self.state['cards'][self.state['dealer']])
+            new_hand.append(self.state['cards_played'][0])
+            new_hand.remove(low[0])
+            return new_hand
+        # Else lowest trump card, discard -> add trump -> return hand
+        else:
+            new_hand = list(self.state['cards'][self.state['dealer']])
+            new_hand.append(self.state['cards_played'][0])
+            new_hand.remove(low_trump[0])
+            return new_hand
+
+
     def _rankCards(self):
         trumpValues = ['9', '10', 'Q', 'K', 'A', 'J', 'J']
         # values = ['9', '10', 'J', 'Q', 'K', 'A']
@@ -201,13 +278,13 @@ class Euchre:
         left_bower = None
         if trump_suit == 'diamonds':
             left_bower = 'hearts'
-        if trump_suit == 'hearts':
+        elif trump_suit == 'hearts':
             left_bower = 'diamonds'
-        if trump_suit == 'spades':
+        elif trump_suit == 'spades':
             left_bower = 'clubs'
-        if trump_suit == 'clubs':
+        elif trump_suit == 'clubs':
             left_bower = 'spades'
-        if left_bower == None: 
+        elif left_bower == None:
             raise ValueError('Left bower could not be assigned.')
         orderedCards: list[Card] = [Card(value, trump_suit) for value in trumpValues] 
         orderedCards[-2].suit = left_bower
@@ -334,6 +411,8 @@ class Euchre:
                 self.state['defenders'].add((player_id+1)%4)
                 self.state['defenders'].add((player_id+3)%4)
             self._rankCards()
+            # Discard for flipped trump card
+            self.state['cards'][self.state['dealer']] = self._discard()
             for _ in range(5):
                 self._trick()
                 trick_winner = self._evaluateTrick()

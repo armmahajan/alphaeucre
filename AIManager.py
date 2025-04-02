@@ -35,11 +35,8 @@ class AIManager:
         self.playersArr = None
         self.QTable = None
 
-    def createQtable(self):
-        self.QTable = Qtable.Qtable()
-
     def AIManager(self):
-        self.createQtable()
+        self.QTable = Qtable.Qtable()
         self.setPlayers()
 
     def setPlayers(self):
@@ -57,12 +54,12 @@ class AIManager:
             raise Exception("Player value not in range")
         if np.random.random() < self.exploration_prob:
             # action is to explore
-            self.playersArr[playerNum].move(state, True, actions)
+            self.playersArr[playerNum].move(state, True, actions, playerNum)
         else:
-            self.playersArr[playerNum].move(state, False, actions)
+            self.playersArr[playerNum].move(state, False, actions,playerNum)
 
     def updateQTable(self, state, action, reward):
         oldQvalue = self.QTable.getQvalue(state, action)
         newValue = self.learning_rate * reward + self.discount_factor * self.QTable.nextStateBestValue(state,action) - oldQvalue
-        self.QTable.updateQvalue(state, action, newValue)
+        self.QTable.table[table,state,action];
 

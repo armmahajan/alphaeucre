@@ -1,12 +1,10 @@
 import numpy as np
-import pandas as pd
-
 
 class Qtable:
     """
     Qtable Setup
     Table is a 3d array
-    Third values: player types
+    first values: player types
         tables 0-3 = attacking
         tables 4-7 = defending
 
@@ -22,10 +20,20 @@ class Qtable:
         2 = team is losing trick with slim probability.
         3 = team is losing trick with high probability.
 
-    first value: actions
-        0: play the highest ranked card available.
-        1: play a mid ranked card available.
-        2: play the lowest ranked card available.
+    third value: actions
+        0: Use trump
+        1: Use led Suit
+        2: throwaway trump
+        3: throwaway suit led
+
+    For 1st player Qtable is different
+        second value is 0: state is same
+
+        third value:
+            0: Lead high off suit
+            1: Set up partner
+            2: trump showdown
+
     """
 
 

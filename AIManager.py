@@ -34,32 +34,35 @@ class AIManager:
     def __init__(self):
         self.playersArr = None
         self.QTable = None
-
-    def AIManager(self):
         self.QTable = Qtable.Qtable()
         self.setPlayers()
+        print('players are set')
 
-    def setPlayers(self):
-        for i in range(1, 4):
-            self.playersArr[i] = AIPlayer.AIPlayer()
+    def AIManager(self):
         pass
 
-    def isTrainingComplete(self):
+    def setPlayers(self):
+        for i in range(0, 3):
+            self.playersArr= [AIPlayer.AIPlayer(self.QTable) for i in range(4)]
+        #pass
+
+    def isTraining(self):
         # if Q-values have minimal change or if Q-values are cycling training is complete return true. else false
         return self.QTable.training
 
-    def movePlayer(self, playerNum, state, actions):
-        # state must be translated to states with ranked cards.
-        if playerNum >= 4 or playerNum <= 0:
-            raise Exception("Player value not in range")
-        if np.random.random() < self.exploration_prob:
-            # action is to explore
-            self.playersArr[playerNum].move(state, True, actions, playerNum)
-        else:
-            self.playersArr[playerNum].move(state, False, actions,playerNum)
+    def getQtable(self):
+        return self.QTable
 
-    def updateQTable(self, state, action, reward):
-        oldQvalue = self.QTable.getQvalue(state, action)
-        newValue = self.learning_rate * reward + self.discount_factor * self.QTable.nextStateBestValue(state,action) - oldQvalue
-        self.QTable.table[table,state,action];
+
+    def movePlayer(self, state,playerNum):
+        # state must be translated to states with ranked cards.
+        actions = state["cards"]
+        # In Game Engine Pindex makes sure player O is always the first to go
+        print(type(playerNum))
+        explore =  np.random.random() < self.exploration_prob
+            # action is to explore
+        return self.playersArr[playerNum].move(state, explore, actions, playerNum)
+
+    def updateQTable(self, playNum, reward):
+        self.playersArr[playNum].updateQtable(reward,self.learning_rate)
 

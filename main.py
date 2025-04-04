@@ -1,6 +1,6 @@
 # This is a sample Python script.
 from GameEngine import Euchre
-#from AIManager import AIManager
+
 
 
 def main():
@@ -8,18 +8,15 @@ def main():
     euchre.gameLoop()
 
 def AITraining():
-    euchre = Euchre() # create the game
- #   AIMan = AIManager() #create the AI players
-
-
-
-
-
-
-
+    euchre = Euchre(AI=True) # create the game
+    euchre.gameLoopAI()
 
 if __name__ == "__main__":
-    main()
+    print("Hello")
+    if input("0 for human players, 1 for AI training: ")=='1':
+        AITraining()
+    else:
+        main()
 
 
 

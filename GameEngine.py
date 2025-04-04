@@ -1,9 +1,13 @@
 import random
 from card import Card
 from typing import Callable
-
+from AIManager import AIManager
 class Euchre:
-    def __init__(self) -> None:
+    def __init__(self, AI = False) -> None:
+        if AI:
+            self.AI_Manager = AIManager()  # create the AI players
+        else:
+            self.AI_Manager = None
         self.state = {
             'phase': 'trumpFaceUp', # One of: trumpFaceUp, dealerDiscard, trumpFaceDown, trick
             'trump': None, # Hack: If trump is a single value it is face up naming, if it is a list, it is face down and the items are the options
@@ -39,14 +43,15 @@ class Euchre:
             3: 0,
         }
         self.players: dict[int, Callable[[dict], int | bool | str]] = {
-            0: self._humanPlayer,
-            1: self._humanPlayer,
-            2: self._humanPlayer,
-            3: self._humanPlayer
+            0: self._AIPlayer if AI else self._humanPlayer,
+            1: self._AIPlayer if AI else self._humanPlayer,
+            2: self._AIPlayer if AI else self._humanPlayer,
+            3: self._AIPlayer if AI else self._humanPlayer
         }
         self.current_turn = 0
         self.deck = self._createCards()
         self.rankedCards = []
+        self.Pindex=0
 
     def registerCallback(self, playerID, callback):
         '''
@@ -56,6 +61,7 @@ class Euchre:
         self.players[playerID] = callback
 
     def _humanPlayer(self, state) -> int | bool | str:
+        print("\n\n")
         match state['phase']:
             case 'trumpFaceUp':
                 print(f'Your hand: {state["cards"]}')
@@ -73,13 +79,47 @@ class Euchre:
             case 'dealerDiscard':
                 return False
             case 'trick':
+                print("\n\n",state['PlayerID'])
                 print(f'Your hand: {state['cards']}')
+                print(f'Your hand2: {state['playerCards']}')
                 print(f'Current Trick: {state['current_trick']}')
                 res = input(f'Which card would you like to play (0-indexed)? ')
                 return int(res)
             case _:
                 raise ValueError('Game state phase has an invalid value.')
-    
+
+    def _AIPlayer(self, state) -> int | bool | str:
+        match state['phase']:
+            case 'trumpFaceUp':
+                return True
+                #print(f'Your hand: {state["cards"]}')
+                #print(f'Trump Offering (faceup): {state['trump']}')
+                #res = input('Take the trump offering (y/n): ')
+                #return True if res == 'y' else False
+            # case 'trumpFaceDown':
+            #     options = state['trump']
+            #     print(f'Your hand: {state["cards"]}')
+            #     print(f'Trump suit options: {state['trump']}')
+            #     # If not dealer
+            #     res = input('Would you like to choose one of the trump options? (<SUIT>, n)')
+            #     # TODO: handle input
+            #     return False
+            case 'dealerDiscard':
+                return False
+            case 'trick':
+                res = self.AI_Manager.movePlayer(state,self.Pindex)
+                print("\n\n", state['PlayerID'])
+                print(f'Your hand: {state['cards']}')
+                print(f'Current Trick: {state['current_trick']}')
+                print(f"AI picked: {res}")
+                #res = input(f'Which card would you like to play (0-indexed)? ')
+                self.Pindex = self.Pindex+1
+                if self.Pindex >3:
+                    self.Pindex=0
+                return int(str(res))
+            case _:
+                raise ValueError('Game state phase has an invalid value.')
+
     def _createCards(self) -> list[Card]:
         suits = ['diamonds', 'clubs', 'spades', 'hearts']
         values = ['9', '10', 'J', 'Q', 'K', 'A']
@@ -101,6 +141,7 @@ class Euchre:
     def _gameStatePlayersView(self, playerID: int) -> dict:
         # Filter cards
         playersCards: list[Card] = self.state['cards'][playerID]
+
         playableCards = []
         for card in playersCards:
             if card.suit == self.state['lead_suit']:
@@ -110,9 +151,12 @@ class Euchre:
 
         playerState = {
             'phase' : self.state['phase'],
+            'makers': True if playerID in self.state['makers'] else False,
+            'PlayerID': playerID,
             'trump': self.state['trump'],
             'dealer' : self.state['dealer'],
             'cards': playableCards,
+            'playerCards': self.state['cards'][playerID],
             'current_trick': self.state['current_trick'],
             'cards_played': self.state['cards_played']
         }
@@ -292,6 +336,48 @@ class Euchre:
             print('Games Over!')
             self._assignPoints()
             self._resetGameState()
+
+    def gameLoopAI(self):
+
+        while True:
+            self._deal()
+            res, player_id = self._trumpNamingFaceUp()
+            if res:
+                self.state['phase'] = 'trick'
+                self.state['makers'].add(player_id)
+                self.state['makers'].add((player_id + 2) % 4)
+                self.state['defenders'].add((player_id + 1) % 4)
+                self.state['defenders'].add((player_id + 3) % 4)
+            self._rankCards()
+            print()
+            for _ in range(5):
+                self._trick()
+                trick_winner = self._evaluateTrick()
+                pwin = (trick_winner-self.state['leader'])%4
+                for i in range(4):
+                    reward=0
+                    if i ==pwin:
+                        reward = 10
+                    else:
+                        reward = -10
+                    self.AI_Manager.updateQTable(i,reward)
+                self.AI_Manager.getQtable().updateCounter()
+                self.state['leader'] = trick_winner
+                print(f"Trick winner is {trick_winner}")
+                print(f"Current Points:\n{self.state['trick_points']}")
+                # Move played cards to the cards_played and reset current_trick
+                self.state['cards_played'].extend([v for _, v in self.state['current_trick'].items()])
+                for k in self.state['current_trick']:
+                    self.state['current_trick'][k] = None
+                if self._isGameOver():
+                    break
+            print('Games Over!')
+            print(self.AI_Manager.getQtable().getTable())
+            if not self.AI_Manager.isTraining():
+                exit(0)
+            self._assignPoints()
+            self._resetGameState()
+
 
 ####################################################
         def movePlayer(state):

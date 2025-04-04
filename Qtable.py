@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 
 class Qtable:
@@ -39,7 +41,7 @@ class Qtable:
 
     def __init__(self):
         self.counter = 0
-        self.table = np.zeros((2, 4, 8))
+        self.table = np.zeros((8, 4, 4))
         self.training=True
 
     def getQvalue(self, state, action):
@@ -51,19 +53,26 @@ class Qtable:
     def nextStateBestValue(self,state,action):
         pass
 
+    def getTable(self):
+        return self.table
+
     def updateCounter(self):
         # update every round. Tracks number of games and saves QTables at intervals.
         self.counter = self.counter + 1
-        if self.counter %10 ==0:
+        if self.counter %1000 ==0:
             self.checkDifference()
             np.save("tempQtables/temp.npy",self.table)
 
-        if self.counter % 100 == 0:
-            np.save(str("milestoneQTables/QtableAt", self.counter,".npy"),self.table)
+        if self.counter % 100000 == 0:
+            filename = f"milestoneQTables/QtableAt{self.counter}.npy"
+            np.save(filename, self.table)
 
     def checkDifference(self):
-        oldQtable= np.load("tempQtables/temp.npy")
-        diff_precent = np.mean(np.abs(self.table-oldQtable)/oldQtable)
-        if diff_precent < .001:# less that .1%
-            self.training=False
+        file = "tempQtables/temp.npy"
+        filePath = Path(file)
+        if filePath.exists():
+            oldQtable= np.load(file)
+            diff_precent = np.mean(np.abs(self.table-oldQtable)/oldQtable)
+            if diff_precent < .001:# less that .1%
+                self.training=False
 

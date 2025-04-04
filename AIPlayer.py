@@ -5,7 +5,7 @@ from itertools import combinations
 
 class AIPlayer:
 
-    def AIPlayer(self,QTable):
+    def __init__(self, QTable):
         self.QTable = QTable
         self.threshold = 0.40
         self.QCellToUpdate = None
@@ -13,7 +13,7 @@ class AIPlayer:
 
     def move(self, state, explore, actions, playerNum):
         ## add game play methods
-        if playerNum not in state.['makers']:
+        if not state['makers']:
             # defending
             playerNum = playerNum + 4
         if explore == True:
@@ -23,19 +23,22 @@ class AIPlayer:
                 np.random.permutation(options)
                 for act in options:
                     if act == 0 :
-                        if self.tryLeadHighOffSuit(state, actions):
+                        result = self.tryLeadHighOffSuit(state, actions)
+                        if result[0]:
                             self.QCellToUpdate=(playerNum,0,0)
-                            break;
+                            return result[1]
                     elif act == 1:
-                        if self.trysetupPartner(state,actions):
+                        result = self.trysetupPartner(state,actions)
+                        if result[0]:
                             self.QCellToUpdate = (playerNum, 0, 1)
-                            break
+                            return result[1]
                     elif act == 2:
-                        if self.tryTrumpShowDown(state,actions):
+                        result = self.tryTrumpShowDown(state,actions)
+                        if result[0]:
                             self.QCellToUpdate = (playerNum, 0, 2)
-                            break
+                            return result[1]
             else:
-                stateValue = self.winProbability(state)
+                stateValue = self.winProbability(state,playerNum)
                 actionNum = None
                 if stateValue >= self.threshold:
                     actionNum = 0
@@ -49,40 +52,47 @@ class AIPlayer:
                 np.random.permutation(options)
                 for act in options:
                     if act == 0:
-                        if self.tryUseTrump(state,actions):
+                        result = self.tryUseTrump(state,actions)
+                        if result[0]:
                             self.QCellToUpdate = (playerNum, actionNum, 0)
-                            break;
+                            return result[1]
                     elif act == 1:
-                        if self.tryUseledSuit(state,actions):
+                        result = self.tryUseLedSuit(state,actions)
+                        if result[0]:
                             self.QCellToUpdate = (playerNum, actionNum, 1)
-                            break
+                            return result[1]
                     elif act == 2:
-                        if self.tryThrowAwayTrump(state,actions):
+                        result = self.tryThrowAwayTrump(state,actions)
+                        if result[0]:
                             self.QCellToUpdate = (playerNum, actionNum, 2)
-                            break
+                            return result[1]
                     elif act == 3:
-                        if self.tryThrowAwaySuitLed(state, actions):
+                        result= self.tryThrowAwaySuitLed(state, actions)
+                        if result[0]:
                             self.QCellToUpdate = (playerNum, actionNum, 4)
-                            break
+                            return result[1]
         else:
             #do action with the highest Q-value
             if playerNum == 0 or playerNum==4:
                 acts = np.argsort(self.QTable.table[playerNum, 0, :])[::-1] #sort arr max to min
                 for act in acts:
                     if act == 0:
-                        if self.tryLeadHighOffSuit(state,actions):
+                        result = self.tryLeadHighOffSuit(state,actions)
+                        if result[0]:
                             self.QCellToUpdate = (playerNum, 0, 0)
-                            break;
+                            return result[1]
                     elif act == 1:
-                        if self.trysetupPartner(state,actions):
+                        result = self.trysetupPartner(state,actions)
+                        if result[0]:
                             self.QCellToUpdate = (playerNum, 0, 1)
-                            break
+                            return result[1]
                     elif act == 2:
-                        if self.tryTrumpShowDown(state,actions):
+                        result=self.tryTrumpShowDown(state,actions)
+                        if result[0]:
                             self.QCellToUpdate = (playerNum, 0, 2)
-                            break
+                            return result[1]
             else:
-                stateValue = self.winProbability(state)
+                stateValue = self.winProbability(state,playerNum)
                 actionNum=None
                 if stateValue >=self.threshold:
                     actionNum=0
@@ -95,21 +105,25 @@ class AIPlayer:
                 acts = np.argsort(self.QTable.table[playerNum, actionNum, :])[::-1]
                 for act in acts:
                     if act == 0:
-                        if self.tryUseTrump(state, actions):
+                        result = self.tryUseTrump(state, actions)
+                        if result[0]:
                             self.QCellToUpdate = (playerNum, actionNum, 0)
-                            break;
+                            return result[1]
                     elif act == 1:
-                        if self.tryUseledSuit(state,actions):
+                        result = self.tryUseLedSuit(state,actions)
+                        if result[0]:
                             self.QCellToUpdate = (playerNum, actionNum, 1)
-                            break
+                            return result[1]
                     elif act == 2:
-                        if self.tryThrowAwayTrump(state, actions):
+                        result = self.tryThrowAwayTrump(state, actions)
+                        if result[0]:
                             self.QCellToUpdate = (playerNum, actionNum, 2)
-                            break
+                            return result[1]
                     elif act == 3:
-                        if self.tryThrowAwaySuitLed(state,actions):
+                        result = self.tryThrowAwaySuitLed(state,actions)
+                        if result[0]:
                             self.QCellToUpdate = (playerNum, actionNum, 3)
-                            break
+                            return result[1]
 
     def getLeftBower(self, trump_suit):
         if trump_suit == 'diamonds':
@@ -127,13 +141,13 @@ class AIPlayer:
     def tryLeadHighOffSuit(self,state, actions):
         index =0;# todo Include edge case where Q,K,A is used J or lower is high card
         for card in actions:
-            if not (card.suit ==state.['trump']):
-                if card.value in set(['Q','K','A']) or card.value == 'J' and card.suit==self.getLeftBower(state.['trump']):
+            if not (card.suit ==state['trump']):
+                if card.value in set(['Q','K','A']) or card.value == 'J' and card.suit==self.getLeftBower(state['trump']):
                     #play that index
                     return True, index
             index = index+1
         # else return false
-        return False, -1
+        return False, index
 
 
     def trysetupPartner(self,state, actions):
@@ -142,79 +156,83 @@ class AIPlayer:
         # should cover areas the other 2 do not cover.
         index = 0;
         for card in actions:
-            if not (card.suit == state.['trump']) or card.value == 'J' and card.suit == self.getLeftBower(state.['trump']):
+            if not (card.suit == state['trump']) or card.value == 'J' and card.suit == self.getLeftBower(state['trump']):
                 if not card.value in set(['Q', 'K', 'A']):
                     # play that index
                     return True, index
             index = index + 1
-        return False, -1
+        return False, index
 
     def tryTrumpShowDown(self,state,actions):
         #If possible to play trump do it
         # else return false
         index = 0; #todo play high trump or low trump
         for card in actions:
-            if  (card.suit == state.['trump'])
+            if  (card.suit == state['trump']):
                     # play that index
                     return True, index
             index = index + 1
-        return False, -1
+        return False, index
 
     # For players 1-3 ____________________________________________________
 
     def tryUseTrump(self,state,actions):
         index = 0; #plays high trump
-        actions.sort().reverse()
+        actions = sorted(actions, reverse=True)
         for card in actions:
-            if  (card.suit == state.['trump']):
+            if  (card.suit == state['trump']):
                     # play that index
                     return True, index
             index = index + 1
-        return False, -1
+        return False, index
 
     def tryUseLedSuit(self,state,actions):
         index = 0;  # play high led suit
-        actions.sort().reverse()
+        actions = sorted(actions, reverse=True)
         for card in actions:
-            if not (card.suit == state.['trump']):
+            if not (card.suit == state['trump']):
                 # play that index
                 return True, index
             index = index + 1
-        return False, -1
+        return False, index
 
     def tryThrowAwayTrump(self, state,actions):
         index = 0;  # plays low trump
         actions.sort()
         for card in actions:
-            if (card.suit == state.['trump']):
+            if (card.suit == state['trump']):
                 # play that index
                 return True, index
             index = index + 1
-        return False, -1
+        return False, index
 
     def tryThrowAwaySuitLed(self,state, actions):
         index = 0;  # play low led suit
         actions.sort()
         for card in actions:
-            if not (card.suit == state.['trump']):
+            if not (card.suit == state['trump']):
                 # play that index
                 return True, index
             index = index + 1
-        return False, -1
+        return False, index
 
     #other functions ______________________________________________________
     def winProbability(self,state,playerNum):
         suits = ['diamonds', 'clubs', 'spades', 'hearts']
         values = ['9', '10', 'J', 'Q', 'K', 'A']
         cards= [Card(value, suit) for suit in suits for value in values]
-        known_cards=  state['card_played'] + state['current_trick']+ state['cards']
-        unknowncards = cards not in known_cards
-
-        BestCardOfTrick = state['currrent_trick'][0]
+        trickCards = self.getTrickcards(state['current_trick'])
+        known_cards=  state['cards_played'] + trickCards + state['playerCards']
+        unknowncards = [card for card in cards if card not in known_cards]
+        BestCardOfTrick =None
+        i=0
+        while BestCardOfTrick == None:
+            BestCardOfTrick = state['current_trick'][i]
+            i=i+1
         BestCardPlayer =0
         playerindex=0
 
-        trump_suit = self.state['trump']
+        trump_suit = state['trump']
         left_bower = None
         if trump_suit == 'diamonds':
             left_bower = 'hearts'
@@ -225,7 +243,9 @@ class AIPlayer:
         if trump_suit == 'clubs':
             left_bower = 'spades'
 
-        for trickCard in state["current_trick"]:
+        for trickCard in state["current_trick"].values():
+            if trickCard == None:
+                break
             if trickCard.suit== state['trump']:
                 if trickCard.value == 'J': #top card
                     BestCardOfTrick = trickCard
@@ -245,7 +265,7 @@ class AIPlayer:
             elif not BestCardOfTrick.suit==state['trump'] and BestCardOfTrick.suit == trickCard.suit and trickCard>BestCardOfTrick:
                 BestCardOfTrick = trickCard
                 BestCardPlayer = playerindex
-            playerindex = playindex + 1
+            playerindex = playerindex + 1
 
         betterCards =[]
         for card in unknowncards:
@@ -266,7 +286,10 @@ class AIPlayer:
         #find who has best card in trick
         # find all cards higher that still have to be played and you don't have
 
-    def updateQtable(self,reward):
-        oldQvalue = self.QTable.table[self.QCellToUpdate(0),self.QCellToUpdate(1),self.QCellToUpdate(2)]
-        newValue = self.learning_rate * reward - oldQvalue
-        self.QTable.table[self.QCellToUpdate(0),self.QCellToUpdate(1),self.QCellToUpdate(2)] = newValue
+    def updateQtable(self,reward,learning_rate):
+        oldQvalue = self.QTable.table[self.QCellToUpdate[0],self.QCellToUpdate[1],self.QCellToUpdate[2]]
+        newValue = learning_rate * reward - oldQvalue
+        self.QTable.table[self.QCellToUpdate[0],self.QCellToUpdate[1],self.QCellToUpdate[2]] = newValue
+
+    def getTrickcards(self, dic):
+        return [dic[i] for i in range(4) if dic[i] is not None]

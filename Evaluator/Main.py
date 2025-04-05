@@ -8,7 +8,7 @@ class Main:
         self.games = [[]]
 
     def simulate(self, games):
-        logger = Logger("euchre_log.txt")
+        logger = Logger()
         print("Start Simulation")
         evaluator = Evaluation(games[0][0], games[0][1], games[0][2], games[0][3], games[1], logger)
         evaluator.initiate()

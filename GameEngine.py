@@ -135,8 +135,19 @@ class Euchre:
             #     res = input('Would you like to choose one of the trump options? (<SUIT>, n)')
             #     # TODO: handle input
             #     return False
-            case 'dealerDiscard':
-                return False
+            case 'makeTrump':
+                if self._validOrderUp(0):
+                    # Discard for flipped trump card
+                    self.state['cards'][self.state['dealer']] = self._discard()
+                # Checking if the third player wants to order up the dealer
+                elif self._validOrderUp(2):
+                    # Discard for flipped trump card
+                    self.state['cards'][self.state['dealer']] = self._discard()
+                # Else the dealer picks up the card
+                else:
+                    # Discard for flipped trump card
+                    self.state['cards'][self.state['dealer']] = self._discard()
+                return True
             case 'trick':
                 print(f'Your hand: {state['cards']}')
                 print(f'Current Trick: {state['current_trick']}')
@@ -207,6 +218,48 @@ class Euchre:
     #     for i in range(4):
     #         res = self.players[(self.state['leader']+i+1)%4](self._gameStatePlayersView(i))
     #         # TODO: handle res and force the dealer
+
+
+    def _validOrderUp(self, index):
+        count = 0
+        score = 0
+        ranks = [["9", 1], ["10", 2], ["J", 8], ["Q", 4], ["K", 5], ["A", 6]]
+
+        # Iterate through players cards
+        for card in self.state['cards'][index]:
+            # If matched trump suit score the card
+            if card.suit == self.state['trump']:
+                for rank in ranks:
+                    if card.value == rank[0]:
+                        score += rank[1]
+                        count += 1
+            # If matched the left bower score it
+            elif card == self.get_left_bower():
+                score += 7
+                count += 1
+
+        # If hand has at least 2 trump cards that total to a score of 16
+        if count >= 2 and score >= 16:
+            return True
+        else:
+            return False
+
+
+    def get_left_bower(self):
+        # Hearts: Left bower is Jack of Diamonds
+        if self.state['trump'] == 'hearts':
+            return 'Card (J diamonds)'
+        # Diamonds: Left bower is Jack of Hearts
+        elif self.state['trump'] == 'diamonds':
+            return 'Card (J hearts)'
+        # Spades: Left bower is Jack of Clubs
+        elif self.state['trump'] == 'spades':
+            return 'Card (J clubs)'
+        # Clubs: Left bower is Jack of Spades
+        elif self.state['trump'] == 'clubs':
+            return 'Card (J spades)'
+        return None
+
 
     def _discard(self):
         hand = [[], [], [], []]
@@ -411,8 +464,19 @@ class Euchre:
                 self.state['defenders'].add((player_id+1)%4)
                 self.state['defenders'].add((player_id+3)%4)
             self._rankCards()
-            # Discard for flipped trump card
-            self.state['cards'][self.state['dealer']] = self._discard()
+            # The Second player cannot order the dealer up as they are teammates
+            # Checking if the first player wants to order up the dealer
+            if self._validOrderUp(0):
+                # Discard for flipped trump card
+                self.state['cards'][self.state['dealer']] = self._discard()
+            # Checking if the third player wants to order up the dealer
+            elif self._validOrderUp(2):
+                # Discard for flipped trump card
+                self.state['cards'][self.state['dealer']] = self._discard()
+            # Else the dealer picks up the card
+            else:
+                # Discard for flipped trump card
+                self.state['cards'][self.state['dealer']] = self._discard()
             for _ in range(5):
                 self._trick()
                 trick_winner = self._evaluateTrick()

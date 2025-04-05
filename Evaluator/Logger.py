@@ -2,7 +2,7 @@ from Evaluator.MinMaxTree import Tree
 
 
 class Logger:
-    def __init__(self, filename="game_log.txt"):
+    def __init__(self):
         self.tree = Tree()  # MinMaxTree to manage game states
 
     # Create log

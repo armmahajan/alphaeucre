@@ -23,11 +23,13 @@ class Evaluation:
 
     def initiate(self):
         save = []
-        save_score = []
+
         setups = self.valid_setups()
 
         for i, setup in enumerate(setups):
             output_file = f"BestGames - {setup[0]} {setup[1]} {i}.txt"
+            sum_score = [0, 0]
+            count_score = 0
             if setup[0] == 'O':
                 print("Simulating")
                 offense0 = False
@@ -35,7 +37,7 @@ class Evaluation:
 
                 cards = self.set_trump(setup[1])
                 # Initiate recursive simulator
-                self.simulate([self.player1, self.player2, self.player3, setup[2]], 0, [], 0, [0, 0], cards)
+                self.simulate([self.player1, self.player2, self.player3, setup[2]], 1, [], 0, [0, 0], cards)
 
                 # MinMax Tree to get best move set
                 print("\n\n*********** MinMax Tree ***********\n\n")
@@ -52,9 +54,9 @@ class Evaluation:
                 if offense0 and offense1:
                     score = "Both Offence and Defence -> Equivalent Games"
                 elif offense0:
-                    score = "Offence, Defense"
-                elif offense1:
                     score = "Defence, Offence"
+                elif offense1:
+                    score = "Offence, Defence"
 
                 for j, game in enumerate(games):
                     print(f"\n\n*********** Best Game for Tree: {j} | Score = [{score}] ***********\n\n")
@@ -62,6 +64,9 @@ class Evaluation:
                     for trick in game:
                         save.append(trick.cards)
                     save.append(game[4].score)
+                    sum_score[0] += game[4].score[0]
+                    sum_score[1] += game[4].score[1]
+                    count_score += 1
 
                 with open(output_file, "w") as file:
                     file.write(f"*********** Best Game's | Score = [{score}] ***********\n\n")
@@ -71,12 +76,13 @@ class Evaluation:
                             file.write("\n")
                         else:
                             file.write(", ")
+                    file.write(f"\n\n*********** Average Score = [{score} = {sum_score[0] / count_score}, {sum_score[1] / count_score}] ***********\n\n")
                 file.close()
 
             elif setup[0] == 'M':
                 print("Simulating")
                 cards = self.set_trump(setup[1])
-                self.simulate([self.player1, self.player2, self.player3, self.player0], 0, [], 0, [0, 0], cards)
+                self.simulate([self.player1, self.player2, self.player3, self.player0], 1, [], 0, [0, 0], cards)
 
                 # MinMax Tree to get best move set
                 print("\n\n*********** MinMax Tree ***********\n\n")
@@ -95,6 +101,9 @@ class Evaluation:
                     for trick in game:
                         save.append(trick.cards)
                     save.append(game[4].score)
+                    sum_score[0] += game[4].score[0]
+                    sum_score[1] += game[4].score[1]
+                    count_score += 1
 
                 with open(output_file, "w") as file:
                     file.write(f"*********** Best Game's | Score = [{score}] ***********\n\n")
@@ -104,6 +113,7 @@ class Evaluation:
                             file.write("\n")
                         else:
                             file.write(", ")
+                    file.write(f"\n\n*********** Average Score = [{score} = {sum_score[0] / count_score}, {sum_score[1] / count_score}] ***********\n\n")
                 file.close()
             else:
                 print("Error: Invalid setup")

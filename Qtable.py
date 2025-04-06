@@ -43,6 +43,8 @@ class Qtable:
         self.counter = 0
         self.table = np.zeros((8, 4, 4))
         self.training=True
+        #self.Startat()
+
 
     def getQvalue(self, state, action):
         return 0
@@ -52,6 +54,12 @@ class Qtable:
 
     def nextStateBestValue(self,state,action):
         pass
+
+    def Startat(self, counter):
+        file = f"milestoneQTables/QtableAt{counter}.npy"
+        filePath = Path(file)
+        if filePath.exists():
+            self.table = np.load(file)
 
     def getTable(self):
         return self.table

@@ -276,7 +276,10 @@ class AIPlayer:
             elif BestCardOfTrick.suit == card.suit and card.value>BestCardOfTrick.value:
                 betterCards.append(card)
 
-        prob = playerNum*(len(betterCards)/len(unknowncards))
+        prob = (len(betterCards)/len(unknowncards)) #Prob of getting a better card
+
+        if playerNum==1 or playerNum ==2: # still has one round of the enemy
+            prob = 1-(1-prob)**len(state['playerCards']) # chance enemy has a better card
         prob = prob*(-1)
         if playerNum==2 and BestCardPlayer==0 or playerNum==3 and BestCardPlayer==1:
             #player's team is winning

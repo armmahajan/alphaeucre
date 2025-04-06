@@ -91,19 +91,29 @@ class Euchre:
     def _AIPlayer(self, state) -> int | bool | str:
         match state['phase']:
             case 'trumpFaceUp':
+             #   print(f'Your hand: {state["cards"]}')
+             #   print(f'Trump Offering (faceup): {state['trump']}')
+             #   complete = False
+             #   while not complete:
+             #       res = input('Take the trump offering (y/n): ')
+             #       if res.upper() not in ['Y', 'N']:
+             #           print('Invalid input. Please enter y or n.')
+             #           continue
+             #       else:
+             #           return True if res.lower() == 'y' else False
+            #case 'makeTrump':
+                if self._validOrderUp(0):
+                    # Discard for flipped trump card
+                    self.state['cards'][self.state['dealer']] = self._discard()
+                # Checking if the third player wants to order up the dealer
+                elif self._validOrderUp(2):
+                    # Discard for flipped trump card
+                    self.state['cards'][self.state['dealer']] = self._discard()
+                # Else the dealer picks up the card
+                else:
+                    # Discard for flipped trump card
+                    self.state['cards'][self.state['dealer']] = self._discard()
                 return True
-                #print(f'Your hand: {state["cards"]}')
-                #print(f'Trump Offering (faceup): {state['trump']}')
-                #res = input('Take the trump offering (y/n): ')
-                #return True if res == 'y' else False
-            # case 'trumpFaceDown':
-            #     options = state['trump']
-            #     print(f'Your hand: {state["cards"]}')
-            #     print(f'Trump suit options: {state['trump']}')
-            #     # If not dealer
-            #     res = input('Would you like to choose one of the trump options? (<SUIT>, n)')
-            #     # TODO: handle input
-            #     return False
             case 'dealerDiscard':
                 return False
             case 'trick':
@@ -124,6 +134,111 @@ class Euchre:
         suits = ['diamonds', 'clubs', 'spades', 'hearts']
         values = ['9', '10', 'J', 'Q', 'K', 'A']
         return [Card(value, suit) for suit in suits for value in values]
+
+    def _validOrderUp(self, index):
+        count = 0
+        score = 0
+        ranks = [["9", 1], ["10", 2], ["J", 8], ["Q", 4], ["K", 5], ["A", 6]]
+
+        # Iterate through players cards
+        for card in self.state['cards'][index]:
+            # If matched trump suit score the card
+            if card.suit == self.state['trump']:
+                for rank in ranks:
+                    if card.value == rank[0]:
+                        score += rank[1]
+                        count += 1
+            # If matched the left bower score it
+            elif card == self.get_left_bower():
+                score += 7
+                count += 1
+
+        # If hand has at least 2 trump cards that total to a score of 16
+        if count >= 2 and score >= 16:
+            return True
+        else:
+            return False
+
+    def get_left_bower(self):
+        # Hearts: Left bower is Jack of Diamonds
+        if self.state['trump'] == 'hearts':
+            return 'Card (J diamonds)'
+        # Diamonds: Left bower is Jack of Hearts
+        elif self.state['trump'] == 'diamonds':
+            return 'Card (J hearts)'
+        # Spades: Left bower is Jack of Clubs
+        elif self.state['trump'] == 'spades':
+            return 'Card (J clubs)'
+        # Clubs: Left bower is Jack of Spades
+        elif self.state['trump'] == 'clubs':
+            return 'Card (J spades)'
+        return None
+
+    def _discard(self):
+        hand = [[], [], [], []]
+        ranks = [["9", 1], ["10", 2], ["J", 3], ["Q", 4], ["K", 5], ["A", 6]]
+        trumpsuit = self.state['trump']
+        if not type(trumpsuit) == str:
+            trumpsuit= trumpsuit.suit
+
+        makes = list({"hearts", "diamonds", "spades", "clubs"} - {trumpsuit})
+        low_one_suit = ["", 10]
+        low = ["", 10]
+        low_trump = ["", 10]
+
+        # Iterating through dealers cards
+        for card in self.state['cards'][self.state['dealer']]:
+            # Matching suits togethers
+            if card.suit != trumpsuit:
+                if card.suit == makes[0]:
+                    hand[0].append(card)
+                elif card.suit == makes[1]:
+                    hand[1].append(card)
+                elif card.suit == makes[2]:
+                    hand[2].append(card)
+            else:
+                hand[3].append(card)
+        # Iterating through collections of suits
+        for suit in hand:
+            # If there is exactly one card of a suit
+            if len(suit) == 1 and suit[0].suit != trumpsuit:
+                for value in ranks:
+                    if suit[0].value == value[0]:
+                        # If card value is lower than previously saved value
+                        if value[1] < low_one_suit[1]:
+                            low_one_suit = [suit[0], value[1]]
+            # If there exists cards in suit
+            elif len(suit) != 0:
+                for card in suit:
+                    # Iterate through card ranks to match card
+                    for value in ranks:
+                        # Keep trump suit separate
+                        if suit != hand[3]:
+                            # If card value is lower than previously saved value
+                            if card.value == value[0]:
+                                if value[1] < low[1]:
+                                    low = [card, value[1]]
+                        # If card value is lower than previously saved value
+                        elif card.value == value[0] and card.suit == trumpsuit:
+                            low_trump = [card, value[1]]
+        # If card of single suit is lower than a King, discard -> add trump -> return hand
+        if low_one_suit[1] <= 4:
+            new_hand = list(self.state['cards'][self.state['dealer']])
+            new_hand.append(self.state['cards_played'][0])
+            new_hand.remove(low_one_suit[0])
+            return new_hand
+        # Else lowest card of non-trump suit, discard -> add trump -> return hand
+        elif low[1] < 8:
+            new_hand = list(self.state['cards'][self.state['dealer']])
+            new_hand.append(self.state['cards_played'][0])
+            new_hand.remove(low[0])
+            return new_hand
+        # Else lowest trump card, discard -> add trump -> return hand
+        else:
+            new_hand = list(self.state['cards'][self.state['dealer']])
+            new_hand.append(self.state['cards_played'][0])
+            new_hand.remove(low_trump[0])
+            return new_hand
 
     def _deal(self) -> None:
         random.shuffle(self.deck)
@@ -349,7 +464,17 @@ class Euchre:
                 self.state['defenders'].add((player_id + 1) % 4)
                 self.state['defenders'].add((player_id + 3) % 4)
             self._rankCards()
-            print()
+            if self._validOrderUp(0):
+                # Discard for flipped trump card
+                self.state['cards'][self.state['dealer']] = self._discard()
+                # Checking if the third player wants to order up the dealer
+            elif self._validOrderUp(2):
+                # Discard for flipped trump card
+                self.state['cards'][self.state['dealer']] = self._discard()
+                # Else the dealer picks up the card
+            else:
+                # Discard for flipped trump card
+                self.state['cards'][self.state['dealer']] = self._discard()
             for _ in range(5):
                 self._trick()
                 trick_winner = self._evaluateTrick()
@@ -357,9 +482,9 @@ class Euchre:
                 for i in range(4):
                     reward=0
                     if i ==pwin:
-                        reward = 10
+                        reward = 1
                     else:
-                        reward = -10
+                        reward = -1
                     self.AI_Manager.updateQTable(i,reward)
                 self.AI_Manager.getQtable().updateCounter()
                 self.state['leader'] = trick_winner

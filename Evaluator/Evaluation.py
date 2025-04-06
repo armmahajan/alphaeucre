@@ -11,7 +11,7 @@ class Evaluation:
         self.player1 = player1
         self.player2 = player2
         self.player3 = player3
-        self.players = [self.player1, self.player2, self.player3, self.player0]
+        self.players = [self.player0, self.player1, self.player2, self.player3]
         self.trump = trump[0]
         self.trump_flipped = trump
         self.logger = logger
@@ -37,26 +37,26 @@ class Evaluation:
 
                 cards = self.set_trump(setup[1])
                 # Initiate recursive simulator
-                self.simulate([self.player1, self.player2, self.player3, setup[2]], 1, [], 0, [0, 0], cards)
+                self.simulate([setup[2], self.player1, self.player2, self.player3], 1, [], 0, [0, 0], cards)
 
                 # MinMax Tree to get best move set
                 print("\n\n*********** MinMax Tree ***********\n\n")
                 games = self.logger.minmax_trees()
 
                 # Getting make options for score orientation
+                if self.valid_pick_up(1):
+                    offense1 = True
+                elif self.valid_pick_up(3):
+                    offense1 = True
                 if self.valid_pick_up(0):
                     offense0 = True
-                elif self.valid_pick_up(2):
-                    offense0 = True
-                if self.valid_pick_up(3):
-                    offense1 = True
                 # Orientated score
                 if offense0 and offense1:
-                    score = "Both Offence and Defence -> Equivalent Games"
-                elif offense0:
-                    score = "Defence, Offence"
+                    score = "Team 0, Team 1"
                 elif offense1:
-                    score = "Offence, Defence"
+                    score = "Team 0: Defence, Team 1: Offence"
+                elif offense0:
+                    score = "Team 0: Offence, Team1: Defence"
 
                 for j, game in enumerate(games):
                     print(f"\n\n*********** Best Game for Tree: {j} | Score = [{score}] ***********\n\n")
@@ -82,17 +82,14 @@ class Evaluation:
             elif setup[0] == 'M':
                 print("Simulating")
                 cards = self.set_trump(setup[1])
-                self.simulate([self.player1, self.player2, self.player3, self.player0], 1, [], 0, [0, 0], cards)
+                self.simulate([self.player0, self.player1, self.player2, self.player3], 1, [], 0, [0, 0], cards)
 
                 # MinMax Tree to get best move set
                 print("\n\n*********** MinMax Tree ***********\n\n")
                 games = self.logger.minmax_trees()
 
                 # Getting score orientation
-                if setup[2] == 0:
-                    score = "Offence, Defense"
-                else:
-                    score = "Defence, Offence"
+                score = "Defence, Offence"
 
                 # Printing games
                 for j, game in enumerate(games):
@@ -119,8 +116,6 @@ class Evaluation:
                 print("Error: Invalid setup")
             self.reset_ranks()
 
-
-
         print("Completed all setup options")
 
 
@@ -132,20 +127,20 @@ class Evaluation:
 
         # Only need to consider one of these as they all result in the same setup
         # If player1 orders up player0
-        if self.valid_order_up(0):
+        if self.valid_order_up(1):
             # Check which cards to get rid of
             hand0 = self.discard()
             setup.append(('O', self.trump, hand0))
         # Elif player3 orders up player0
-        elif self.valid_order_up(2):
+        elif self.valid_order_up(3):
             # Check which cards to get rid of
             hand0 = self.discard()
             setup.append(('O', self.trump, hand0))
         # Elif player0 picks up the flipped card
-        elif self.valid_pick_up(3):
+        elif self.valid_pick_up(0):
             # Check which cards to get rid of
             hand0 = self.discard()
-            setup.append(('0', self.trump, hand0))
+            setup.append(('O', self.trump, hand0))
 
         # If trump was turned down, go in a circle deciding trump
         for i in range(4):
@@ -315,7 +310,7 @@ class Evaluation:
         low = ["", 10]
         low_trump = ["", 10]
 
-        for card in self.players[3]:
+        for card in self.players[0]:
             if card[0] != self.trump:
                 if card[0] == makes[0]:
                     hand[0].append(card)
@@ -331,8 +326,8 @@ class Evaluation:
             if len(suit) == 1:
                 for value in ranks:
                     if value[0] == suit[0][1]:
-                        #print("Saved lowest one suit: ", suit[0])
-                        low_one_suit = [suit[0], value[1]]
+                        if value[1] < low_one_suit[1]:
+                            low_one_suit = [suit[0], value[1]]
             # If there exists cards in suit
             elif len(suit) != 0:
                 for card in suit:
@@ -346,17 +341,17 @@ class Evaluation:
                                     low_trump = [card, value[1]]
 
         if low_one_suit[1] <= 4:
-            new_hand = list(self.players[3])
+            new_hand = list(self.players[0])
             new_hand.append(self.trump_flipped)
             new_hand.remove(str(low_one_suit[0]))
             return new_hand
         elif low[1] < 8:
-            new_hand = list(self.players[3])
+            new_hand = list(self.players[0])
             new_hand.append(self.trump_flipped)
             new_hand.remove(str(low[0]))
             return new_hand
         else:
-            new_hand = list(self.players[3])
+            new_hand = list(self.players[0])
             new_hand.append(self.trump_flipped)
             new_hand.remove(str(low_trump[0]))
             return new_hand

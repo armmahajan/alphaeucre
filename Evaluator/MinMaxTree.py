@@ -92,6 +92,8 @@ class Tree:
         self.win_count = 0
         self.end_states = 0
 
+        #print(f"Evaluating {child} with path {path}")
+
         root_node = path[0]
         imm_control = 0
         future_control = 0
@@ -130,20 +132,21 @@ class Tree:
         # Final evaluation
         score_component = (child.score[0] - child.score[1]) * win_ratio * depth_weight
         control_component = (imm_control + future_control) * control_weight
-        #balance_component = -dispersion_penalty * 0.1
 
-        #return strategy_multiplier * (score_component + control_component + balance_component)
+        #print(f"Score Calculated: {score_component + control_component}")
+
         return score_component + control_component
 
 
     def _get_win_ratio(self, node):
-            if not node.children:
-                self.win_count += node.score[0] - node.score[1]
-                self.end_states += 1
-                return
+        #print(f"Getting win ratio for {node}")
+        if not node.children:
+            self.win_count += node.score[0] - node.score[1]
+            self.end_states += 1
+            return
 
-            for child in node.children:
-                self._get_win_ratio(child)
+        for child in node.children:
+            self._get_win_ratio(child)
 
 
     def minmax_roots(self):
@@ -200,6 +203,7 @@ class Tree:
 
 
     def _find_best(self, node, team, path):
+        #print(f"Finding best game for {node} with path {path}")
         # If node has children
         if node.children:
             # If nodes children are not the leafs

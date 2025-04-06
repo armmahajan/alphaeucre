@@ -19,10 +19,28 @@ class Main:
 
 
 if __name__ == "__main__":
+    # OG Test -> runs one simulation
     player1 = ["HJ", "H1", "CA", "S9", "SK"]
     player2 = ["SQ", "H9", "CJ", "SA", "D1"]
     player3 = ["HA", "SJ", "S1", "D9", "HK"]
     player0 = ["DJ", "C9", "CQ", "DA", "DQ"]
     trump = 'DK'
+
+
+    # Evaluation Test -> even hands
+    '''player1 = ["SA", "S1", "HA", "DQ", "CK"]
+    player2 = ["SJ", "HQ", "DK", "C1", "CA"]
+    player3 = ["S9", "DA", "DJ", "C9", "CQ"]
+    player0 = ["SQ", "CJ", "H9", "HK", "D1"]
+    trump = 'SK'
+    '''
+
+    # Evaluation Test -> infinite recursion while searching for the 7th root's best path
+    '''player1 = ["H9", "S1", "HA", "DQ", "CK"]
+    player2 = ["SA", "HQ", "DK", "C1", "CA"]
+    player3 = ["S9", "DA", "DJ", "C9", "CQ"]
+    player0 = ["SQ", "CJ", "SJ", "HK", "D1"]
+    trump = 'SK'
+    '''
     main_obj = Main()
-    main_obj.run_auto([[player1, player2, player3, player0], trump])
+    main_obj.run_auto([[player0, player1, player2, player3], trump])

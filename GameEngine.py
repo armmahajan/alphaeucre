@@ -119,6 +119,7 @@ class Euchre:
             case 'trick':
                 res = self.AI_Manager.movePlayer(state,self.Pindex)
                 print("\n\n", state['PlayerID'])
+                print(f'Your hand_full: {state['playerCards']}')
                 print(f'Your hand: {state['cards']}')
                 print(f'Current Trick: {state['current_trick']}')
                 print(f"AI picked: {res}")
@@ -253,6 +254,40 @@ class Euchre:
                 players_cards.append(self.deck.pop())
             self.state['cards'][(self.state['dealer']+i+1)%4].extend(players_cards)
 
+    def _dealEvl(self)->None:
+        random.shuffle(self.deck)
+
+
+        #player 2
+        self.state['cards'][(self.state['dealer'] + 0 + 1) % 4].extend(
+            [Card ("9", "hearts"), Card ("10", "spades"), Card( "A", "hearts"), Card ("Q", "diamonds"), Card ("K", "clubs")])
+
+        #player 3
+        self.state['cards'][(self.state['dealer'] + 1 + 1) % 4].extend(
+            [Card ("A", "spades"), Card ("Q", "Hearts"), Card ("K", "diamonds"), Card("10", "clubs"), Card( "A", "clubs")])
+
+
+        #player 4
+        self.state['cards'][(self.state['dealer'] + 2 + 1) % 4].extend(
+            [Card( "9", "spades"), Card( "A", "diamonds"), Card( "J", "diamonds"), Card( "9", "clubs"), Card ("Q", "clubs")])
+
+        # PLAYER 1
+        self.state['cards'][(self.state['dealer'] + 3 + 1) % 4].extend(
+            [Card("Q", "spades"), Card("J", "clubs"), Card( "J", "spades"), Card( "K", "hearts"), Card( "10", "diamonds")])
+
+
+        #for i in range(4):
+         #   players_cards = []
+         #   for _ in range(3):
+                #players_cards.append(self.deck.pop())
+
+          #  self.state['cards'][(self.state['dealer'] + i + 1) % 4].extend(players_cards)
+        #for i in range(4):
+        #    players_cards = []
+        #    for _ in range(2):
+        #        players_cards.append(self.deck.pop())
+        #    self.state['cards'][(self.state['dealer'] + i + 1) % 4].extend(players_cards)
+
     def _gameStatePlayersView(self, playerID: int) -> dict:
         # Filter cards
         playersCards: list[Card] = self.state['cards'][playerID]
@@ -279,6 +314,15 @@ class Euchre:
 
     def _trumpNamingFaceUp(self) -> tuple[bool, int]:
         self.state['trump'] = self.deck.pop()
+        self.state['cards_played'].append(self.state['trump'])
+        for i in range(4):
+            if self.players[(self.state['leader']+i)%4](self._gameStatePlayersView(i)):
+                self.state['trump'] = self.state['trump'].suit
+                return (True, i)
+        return (False, -1)
+
+    def _trumpNamingFaceUpEvl(self) -> tuple[bool, int]:
+        self.state['trump'] = Card('K','spades')
         self.state['cards_played'].append(self.state['trump'])
         for i in range(4):
             if self.players[(self.state['leader']+i)%4](self._gameStatePlayersView(i)):
@@ -455,8 +499,10 @@ class Euchre:
     def gameLoopAI(self):
 
         while True:
-            self._deal()
-            res, player_id = self._trumpNamingFaceUp()
+            #self._deal()
+            self._dealEvl()
+            #res, player_id = self._trumpNamingFaceUp()
+            res, player_id = self._trumpNamingFaceUpEvl()
             if res:
                 self.state['phase'] = 'trick'
                 self.state['makers'].add(player_id)
@@ -464,17 +510,17 @@ class Euchre:
                 self.state['defenders'].add((player_id + 1) % 4)
                 self.state['defenders'].add((player_id + 3) % 4)
             self._rankCards()
-            if self._validOrderUp(0):
+            #if self._validOrderUp(0):
                 # Discard for flipped trump card
-                self.state['cards'][self.state['dealer']] = self._discard()
+            #    self.state['cards'][self.state['dealer']] = self._discard()
                 # Checking if the third player wants to order up the dealer
-            elif self._validOrderUp(2):
+            #elif self._validOrderUp(2):
                 # Discard for flipped trump card
-                self.state['cards'][self.state['dealer']] = self._discard()
+                #self.state['cards'][self.state['dealer']] = self._discard()
                 # Else the dealer picks up the card
-            else:
+            #else:
                 # Discard for flipped trump card
-                self.state['cards'][self.state['dealer']] = self._discard()
+             #   self.state['cards'][self.state['dealer']] = self._discard()
             for _ in range(5):
                 self._trick()
                 trick_winner = self._evaluateTrick()
@@ -485,7 +531,7 @@ class Euchre:
                         reward = 1
                     else:
                         reward = -1
-                    self.AI_Manager.updateQTable(i,reward)
+                    #self.AI_Manager.updateQTable(i,reward)
                 self.AI_Manager.getQtable().updateCounter()
                 self.state['leader'] = trick_winner
                 print(f"Trick winner is {trick_winner}")
@@ -498,6 +544,7 @@ class Euchre:
                     break
             print('Games Over!')
             print(self.AI_Manager.getQtable().getTable())
+            exit(0)
             if not self.AI_Manager.isTraining():
                 exit(0)
             self._assignPoints()

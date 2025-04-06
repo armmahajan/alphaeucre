@@ -6,7 +6,7 @@ from openpyxl import Workbook
 
 
 def main():
-    counter = 6300000
+    counter = 00000
     file = f"milestoneQTables/QtableAt{counter}.npy"
     filePath = Path(file)
     if filePath.exists():

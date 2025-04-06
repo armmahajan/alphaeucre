@@ -119,6 +119,7 @@ class Euchre:
             case 'trick':
                 res = self.AI_Manager.movePlayer(state,self.Pindex)
                 print("\n\n", state['PlayerID'])
+                print(f'Your hand Full: {state['playerCards']}')
                 print(f'Your hand: {state['cards']}')
                 print(f'Current Trick: {state['current_trick']}')
                 print(f"AI picked: {res}")
@@ -464,17 +465,7 @@ class Euchre:
                 self.state['defenders'].add((player_id + 1) % 4)
                 self.state['defenders'].add((player_id + 3) % 4)
             self._rankCards()
-            if self._validOrderUp(0):
-                # Discard for flipped trump card
-                self.state['cards'][self.state['dealer']] = self._discard()
-                # Checking if the third player wants to order up the dealer
-            elif self._validOrderUp(2):
-                # Discard for flipped trump card
-                self.state['cards'][self.state['dealer']] = self._discard()
-                # Else the dealer picks up the card
-            else:
-                # Discard for flipped trump card
-                self.state['cards'][self.state['dealer']] = self._discard()
+
             for _ in range(5):
                 self._trick()
                 trick_winner = self._evaluateTrick()

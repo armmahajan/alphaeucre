@@ -44,6 +44,7 @@ class Qtable:
         self.table = np.zeros((8, 4, 4))
         self.training=True
         #self.Startat()
+        #self.prob = np.empty((0, 2), dtype=float)
 
 
     def getQvalue(self, state, action):
@@ -54,6 +55,10 @@ class Qtable:
 
     def nextStateBestValue(self,state,action):
         pass
+
+    def SaveProb (self, probo,player):
+       new_pair = np.array([[probo, player]])
+       self.prob= np.vstack([self.prob, new_pair])
 
     def Startat(self, counter):
         file = f"milestoneQTables/QtableAt{counter}.npy"
@@ -67,6 +72,7 @@ class Qtable:
     def updateCounter(self):
         # update every round. Tracks number of games and saves QTables at intervals.
         self.counter = self.counter + 1
+        print(f"counter::::::::::::::::::::{self.counter}")
         if self.counter %1000 ==0:
             self.checkDifference()
             np.save("tempQtables/temp.npy",self.table)
@@ -74,6 +80,8 @@ class Qtable:
         if self.counter % 100000 == 0:
             filename = f"milestoneQTables/QtableAt{self.counter}.npy"
             np.save(filename, self.table)
+           # np.savetxt(f"milestoneQTables/ProbabilityAt{self.counter}.csv", self.prob, delimiter=",", header="x,y", fmt="%.2f")
+
 
     def checkDifference(self):
         file = "tempQtables/temp.npy"

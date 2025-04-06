@@ -39,12 +39,13 @@ class AIPlayer:
                             return result[1]
             else:
                 stateValue = self.winProbability(state,playerNum)
+                #self.QTable.SaveProb(stateValue,playerNum)
                 actionNum = None
-                if stateValue >= self.threshold:
+                if stateValue >= .340664:
                     actionNum = 0
                 elif stateValue >= 0:
                     actionNum = 1
-                elif stateValue >= -self.threshold:
+                elif stateValue >= -.72187:
                     actionNum = 2
                 else:
                     actionNum = 3
@@ -93,6 +94,7 @@ class AIPlayer:
                             return result[1]
             else:
                 stateValue = self.winProbability(state,playerNum)
+                #self.QTable.SaveProb(stateValue,playerNum)
                 actionNum=None
                 if stateValue >=self.threshold:
                     actionNum=0

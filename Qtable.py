@@ -43,12 +43,12 @@ class Qtable:
         self.counter = 0
         self.table = np.zeros((8, 4, 4))
         self.training=True
-        self.UseQtable()
+        #self.UseQtable() todo
         #self.Startat()
         #self.prob = np.empty((0, 2), dtype=float)
 
     def UseQtable(self):
-        counter = 1000000
+        counter = 6600000
         file = f"milestoneQTables/QtableAt{counter}.npy"
         filePath = Path(file)
         if filePath.exists():

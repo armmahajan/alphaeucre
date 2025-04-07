@@ -146,6 +146,7 @@ class AIPlayer:
             if not (card.suit ==state['trump']):
                 if card.value in set(['Q','K','A']) or card.value == 'J' and card.suit==self.getLeftBower(state['trump']):
                     #play that index
+                    print(f"AI pick {card}")
                     return True, index
             index = index+1
         # else return false
@@ -161,6 +162,7 @@ class AIPlayer:
             if not (card.suit == state['trump']) or card.value == 'J' and card.suit == self.getLeftBower(state['trump']):
                 if not card.value in set(['Q', 'K', 'A']):
                     # play that index
+                    print(f"AI pick {card}")
                     return True, index
             index = index + 1
         return False, index
@@ -172,6 +174,7 @@ class AIPlayer:
         for card in actions:
             if  (card.suit == state['trump']):
                     # play that index
+                    print(f"AI pick {card}")
                     return True, index
             index = index + 1
         return False, index
@@ -180,41 +183,45 @@ class AIPlayer:
 
     def tryUseTrump(self,state,actions):
         index = 0; #plays high trump
-        actions = sorted(actions, reverse=True)
-        for card in actions:
+        actionstry = sorted(actions, reverse=True)
+        for card in actionstry:
             if  (card.suit == state['trump']):
                     # play that index
-                    return True, index
+                    print(f"AI pick {card}")
+                    return True, actions.index(card)
             index = index + 1
         return False, index
 
     def tryUseLedSuit(self,state,actions):
         index = 0;  # play high led suit
-        actions = sorted(actions, reverse=True)
-        for card in actions:
+        actionsToplay = sorted(actions, reverse=True)
+        for card in actionsToplay:
             if not (card.suit == state['trump']):
                 # play that index
-                return True, index
+                print(f"AI pick {card}")
+                return True, actions.index(card)
             index = index + 1
         return False, index
 
     def tryThrowAwayTrump(self, state,actions):
         index = 0;  # plays low trump
-        actions.sort()
-        for card in actions:
+        actionstry = sorted(actions)
+        for card in actionstry:
             if (card.suit == state['trump']):
                 # play that index
-                return True, index
+                print(f"AI pick {card}")
+                return True, actions.index(card)
             index = index + 1
         return False, index
 
     def tryThrowAwaySuitLed(self,state, actions):
         index = 0;  # play low led suit
-        actions.sort()
-        for card in actions:
+        actionstry = sorted(actions)
+        for card in actionstry:
             if not (card.suit == state['trump']):
                 # play that index
-                return True, index
+                print(f"AI pick {card}")
+                return True, actions.index(card)
             index = index + 1
         return False, index
 

@@ -1,23 +1,22 @@
 # This is a sample Python script.
-from GameMaster import GameMaster
-from AIManager import AIManager
+from GameEngine import Euchre
 
 
 
+def main():
+    euchre = Euchre()
+    euchre.gameLoop()
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    Manager = AIManager()
-    Game = GameMaster()
-    savePeriod = 100
-    curCount = 0
-    while(not AIManager.IsTrainingComplete()): #training Loop
-        Game.SetPlayers(AIManager.setPlayers())
-        results = Game.RunGame()
-        AIManager.UpdateTables(results)
-        if curCount%100==0:
-            AIManager.saveQTables(curCount)
-        curCount=curCount+1
+def AITraining():
+    euchre = Euchre(AI=True) # create the game
+    euchre.gameLoopAI()
+
+if __name__ == "__main__":
+    print("Hello")
+    if input("0 for human players, 1 for AI training: ")=='1':
+        AITraining()
+    else:
+        main()
 
 
 

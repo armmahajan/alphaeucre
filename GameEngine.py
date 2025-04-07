@@ -503,10 +503,10 @@ class Euchre:
     def gameLoopAI(self):
 
         while True:
-            self._deal()
-            #self._dealEvl() todo
-            res, player_id = self._trumpNamingFaceUp()
-            #res, player_id = self._trumpNamingFaceUpEvl() todo
+            #self._deal()
+            self._dealEvl() #todo
+            #res, player_id = self._trumpNamingFaceUp()
+            res, player_id = self._trumpNamingFaceUpEvl() #todo
             if res:
                 self.state['phase'] = 'trick'
                 self.state['makers'].add(player_id)
@@ -535,7 +535,7 @@ class Euchre:
                         reward = 1
                     else:
                         reward = -1
-                    self.AI_Manager.updateQTable(i,reward) #todo
+                    #self.AI_Manager.updateQTable(i,reward) #todo
                 self.AI_Manager.getQtable().updateCounter()
                 self.state['leader'] = trick_winner
                 print(f"Trick winner is {trick_winner}")
@@ -548,7 +548,7 @@ class Euchre:
                     break
             print('Games Over!')
             print(self.AI_Manager.getQtable().getTable())
-            #exit(0)
+            exit(0)
             if not self.AI_Manager.isTraining():
                 exit(0)
             self._assignPoints()

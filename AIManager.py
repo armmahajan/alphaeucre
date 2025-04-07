@@ -8,7 +8,7 @@ class AIManager:
     # constants for learning
     learning_rate: int = 0.8
     discount_factor: int = 0.95
-    exploration_prob: int = 0.30
+    exploration_prob: int = 0.3 #0.3 for training .1
     epochs: int = 1000
 
     def __init__(self):

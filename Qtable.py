@@ -43,12 +43,12 @@ class Qtable:
         self.counter = 0
         self.table = np.zeros((8, 4, 4))
         self.training=True
-        #self.UseQtable() todo
+        self.UseQtable() #todo
         #self.Startat()
         #self.prob = np.empty((0, 2), dtype=float)
 
     def UseQtable(self):
-        counter = 6600000
+        counter = 400000
         file = f"milestoneQTables/QtableAt{counter}.npy"
         filePath = Path(file)
         if filePath.exists():
@@ -84,7 +84,7 @@ class Qtable:
             self.checkDifference()
             np.save("tempQtables/temp.npy",self.table)
 
-        if self.counter % 100000 == 0:
+        if self.counter % 1000 == 0:
             filename = f"milestoneQTables/QtableAt{self.counter}.npy"
             np.save(filename, self.table)
            # np.savetxt(f"milestoneQTables/ProbabilityAt{self.counter}.csv", self.prob, delimiter=",", header="x,y", fmt="%.2f")

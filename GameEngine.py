@@ -66,8 +66,14 @@ class Euchre:
             case 'trumpFaceUp':
                 print(f'Your hand: {state["cards"]}')
                 print(f'Trump Offering (faceup): {state['trump']}')
-                res = input('Take the trump offering (y/n): ')
-                return True if res == 'y' else False
+                complete = False
+                while not complete:
+                    res = input('Take the trump offering (y/n): ')
+                    if res.upper() not in ['Y', 'N']:
+                        print('Invalid input. Please enter y or n.')
+                        continue
+                    else:
+                        return True if res.lower() == 'y' else False
             # case 'trumpFaceDown':
             #     options = state['trump']
             #     print(f'Your hand: {state["cards"]}')
@@ -76,15 +82,32 @@ class Euchre:
             #     res = input('Would you like to choose one of the trump options? (<SUIT>, n)')
             #     # TODO: handle input
             #     return False
-            case 'dealerDiscard':
-                return False
+            case 'makeTrump':
+                if self._validOrderUp(0):
+                    # Discard for flipped trump card
+                    self.state['cards'][self.state['dealer']] = self._discard()
+                # Checking if the third player wants to order up the dealer
+                elif self._validOrderUp(2):
+                    # Discard for flipped trump card
+                    self.state['cards'][self.state['dealer']] = self._discard()
+                # Else the dealer picks up the card
+                else:
+                    # Discard for flipped trump card
+                    self.state['cards'][self.state['dealer']] = self._discard()
+                return True
             case 'trick':
                 print("\n\n",state['PlayerID'])
                 print(f'Your hand: {state['cards']}')
                 print(f'Your hand2: {state['playerCards']}')
                 print(f'Current Trick: {state['current_trick']}')
-                res = input(f'Which card would you like to play (0-indexed)? ')
-                return int(res)
+                complete = False
+                while not complete:
+                    res = input(f'Which card would you like to play (0-indexed)? ')
+                    if int(res) > len(state['cards']) - 1 or int(res) < 0:
+                        print('Invalid input. Please enter a valid card index.')
+                        continue
+                    else:
+                        return int(res)
             case _:
                 raise ValueError('Game state phase has an invalid value.')
 
@@ -135,45 +158,6 @@ class Euchre:
         suits = ['diamonds', 'clubs', 'spades', 'hearts']
         values = ['9', '10', 'J', 'Q', 'K', 'A']
         return [Card(value, suit) for suit in suits for value in values]
-
-    def _validOrderUp(self, index):
-        count = 0
-        score = 0
-        ranks = [["9", 1], ["10", 2], ["J", 8], ["Q", 4], ["K", 5], ["A", 6]]
-
-        # Iterate through players cards
-        for card in self.state['cards'][index]:
-            # If matched trump suit score the card
-            if card.suit == self.state['trump']:
-                for rank in ranks:
-                    if card.value == rank[0]:
-                        score += rank[1]
-                        count += 1
-            # If matched the left bower score it
-            elif card == self.get_left_bower():
-                score += 7
-                count += 1
-
-        # If hand has at least 2 trump cards that total to a score of 16
-        if count >= 2 and score >= 16:
-            return True
-        else:
-            return False
-
-    def get_left_bower(self):
-        # Hearts: Left bower is Jack of Diamonds
-        if self.state['trump'] == 'hearts':
-            return 'Card (J diamonds)'
-        # Diamonds: Left bower is Jack of Hearts
-        elif self.state['trump'] == 'diamonds':
-            return 'Card (J hearts)'
-        # Spades: Left bower is Jack of Clubs
-        elif self.state['trump'] == 'spades':
-            return 'Card (J clubs)'
-        # Clubs: Left bower is Jack of Spades
-        elif self.state['trump'] == 'clubs':
-            return 'Card (J spades)'
-        return None
 
     def _discard(self):
         hand = [[], [], [], []]
@@ -257,7 +241,6 @@ class Euchre:
     def _dealEvl(self)->None:
         random.shuffle(self.deck)
 
-
         #player 2
         self.state['cards'][(self.state['dealer'] + 0 + 1) % 4].extend(
             [Card("A", "spades"), Card("10", "spades"), Card("A", "hearts"), Card("Q", "diamonds"), Card("K", "clubs")])
@@ -279,18 +262,6 @@ class Euchre:
 
         #[Card("Q", "spades"), Card("J", "clubs"), Card( "J", "spades"), Card( "K", "hearts"), Card( "10", "diamonds")])
 
-
-        #for i in range(4):
-         #   players_cards = []
-         #   for _ in range(3):
-                #players_cards.append(self.deck.pop())
-
-          #  self.state['cards'][(self.state['dealer'] + i + 1) % 4].extend(players_cards)
-        #for i in range(4):
-        #    players_cards = []
-        #    for _ in range(2):
-        #        players_cards.append(self.deck.pop())
-        #    self.state['cards'][(self.state['dealer'] + i + 1) % 4].extend(players_cards)
 
     def _gameStatePlayersView(self, playerID: int) -> dict:
         # Filter cards
@@ -341,7 +312,48 @@ class Euchre:
     #     for i in range(4):
     #         res = self.players[(self.state['leader']+i+1)%4](self._gameStatePlayersView(i))
     #         # TODO: handle res and force the dealer
-    
+
+
+    def _validOrderUp(self, index):
+        count = 0
+        score = 0
+        ranks = [["9", 1], ["10", 2], ["J", 8], ["Q", 4], ["K", 5], ["A", 6]]
+
+        # Iterate through players cards
+        for card in self.state['cards'][index]:
+            # If matched trump suit score the card
+            if card.suit == self.state['trump']:
+                for rank in ranks:
+                    if card.value == rank[0]:
+                        score += rank[1]
+                        count += 1
+            # If matched the left bower score it
+            elif card == self.get_left_bower():
+                score += 7
+                count += 1
+
+        # If hand has at least 2 trump cards that total to a score of 16
+        if count >= 2 and score >= 16:
+            return True
+        else:
+            return False
+
+
+    def get_left_bower(self):
+        # Hearts: Left bower is Jack of Diamonds
+        if self.state['trump'] == 'hearts':
+            return 'Card (J diamonds)'
+        # Diamonds: Left bower is Jack of Hearts
+        elif self.state['trump'] == 'diamonds':
+            return 'Card (J hearts)'
+        # Spades: Left bower is Jack of Clubs
+        elif self.state['trump'] == 'spades':
+            return 'Card (J clubs)'
+        # Clubs: Left bower is Jack of Spades
+        elif self.state['trump'] == 'clubs':
+            return 'Card (J spades)'
+        return None
+
     def _rankCards(self):
         trumpValues = ['9', '10', 'Q', 'K', 'A', 'J', 'J']
         # values = ['9', '10', 'J', 'Q', 'K', 'A']
@@ -349,13 +361,13 @@ class Euchre:
         left_bower = None
         if trump_suit == 'diamonds':
             left_bower = 'hearts'
-        if trump_suit == 'hearts':
+        elif trump_suit == 'hearts':
             left_bower = 'diamonds'
-        if trump_suit == 'spades':
+        elif trump_suit == 'spades':
             left_bower = 'clubs'
-        if trump_suit == 'clubs':
+        elif trump_suit == 'clubs':
             left_bower = 'spades'
-        if left_bower == None: 
+        elif left_bower == None:
             raise ValueError('Left bower could not be assigned.')
         orderedCards: list[Card] = [Card(value, trump_suit) for value in trumpValues] 
         orderedCards[-2].suit = left_bower
@@ -483,7 +495,6 @@ class Euchre:
                 self.state['defenders'].add((player_id+1)%4)
                 self.state['defenders'].add((player_id+3)%4)
             self._rankCards()
-            print(self.rankedCards)
             for _ in range(5):
                 self._trick()
                 trick_winner = self._evaluateTrick()

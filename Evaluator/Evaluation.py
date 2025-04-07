@@ -11,7 +11,7 @@ class Evaluation:
         self.player1 = player1
         self.player2 = player2
         self.player3 = player3
-        self.players = [self.player1, self.player2, self.player3, self.player0]
+        self.players = [self.player0, self.player1, self.player2, self.player3]
         self.trump = trump[0]
         self.trump_flipped = trump
         self.logger = logger
@@ -22,38 +22,101 @@ class Evaluation:
             "C9": 1, "C1": 2, "CJ": 3, "CQ": 4, "CK": 5, "CA": 6}
 
     def initiate(self):
+        save = []
+
         setups = self.valid_setups()
 
         for i, setup in enumerate(setups):
+            output_file = f"BestGames - {setup[0]} {setup[1]} {i}.txt"
+            sum_score = [0, 0]
+            count_score = 0
             if setup[0] == 'O':
                 print("Simulating")
+                offense0 = False
+                offense1 = False
+
                 cards = self.set_trump(setup[1])
                 # Initiate recursive simulator
-                self.simulate([self.player1, self.player2, self.player3, setup[2]], 0, [], 0, [0, 0], cards)
-                # Writing logs
+                self.simulate([setup[2], self.player1, self.player2, self.player3], 1, [], 0, [0, 0], cards)
+
+                # MinMax Tree to get best move set
+                print("\n\n*********** MinMax Tree ***********\n\n")
+                games = self.logger.minmax_trees()
+
+                # Getting make options for score orientation
+                if self.valid_pick_up(1):
+                    offense1 = True
+                elif self.valid_pick_up(3):
+                    offense1 = True
+                if self.valid_pick_up(0):
+                    offense0 = True
+                # Orientated score
+                if offense0 and offense1:
+                    score = "Team 0, Team 1"
+                elif offense1:
+                    score = "Team 0: Defence, Team 1: Offence"
+                elif offense0:
+                    score = "Team 0: Offence, Team1: Defence"
+
+                for j, game in enumerate(games):
+                    print(f"\n\n*********** Best Game for Tree: {j} | Score = [{score}] ***********\n\n")
+                    print(game)
+                    for trick in game:
+                        save.append(trick.cards)
+                    save.append(game[4].score)
+                    sum_score[0] += game[4].score[0]
+                    sum_score[1] += game[4].score[1]
+                    count_score += 1
+
+                with open(output_file, "w") as file:
+                    file.write(f"*********** Best Game's | Score = [{score}] ***********\n\n")
+                    for j, s in enumerate(save, 1):
+                        file.write(f"{s}")
+                        if j % 6 == 0 and j != 0:
+                            file.write("\n")
+                        else:
+                            file.write(", ")
+                    file.write(f"\n\n*********** Average Score = [{score} = {sum_score[0] / count_score}, {sum_score[1] / count_score}] ***********\n\n")
+                file.close()
+
             elif setup[0] == 'M':
                 print("Simulating")
                 cards = self.set_trump(setup[1])
-                self.simulate([self.player1, self.player2, self.player3, self.player0], 0, [], 0, [0, 0], cards)
-                # Writing logs
+                self.simulate([self.player0, self.player1, self.player2, self.player3], 1, [], 0, [0, 0], cards)
+
+                # MinMax Tree to get best move set
+                print("\n\n*********** MinMax Tree ***********\n\n")
+                games = self.logger.minmax_trees()
+
+                # Getting score orientation
+                score = "Defence, Offence"
+
+                # Printing games
+                for j, game in enumerate(games):
+                    print(f"\n\n*********** Best Game for Tree: {j} | Score = [{score}] ***********\n\n")
+                    print(game)
+                    for trick in game:
+                        save.append(trick.cards)
+                    save.append(game[4].score)
+                    sum_score[0] += game[4].score[0]
+                    sum_score[1] += game[4].score[1]
+                    count_score += 1
+
+                with open(output_file, "w") as file:
+                    file.write(f"*********** Best Game's | Score = [{score}] ***********\n\n")
+                    for j, s in enumerate(save, 1):
+                        file.write(f"{s}")
+                        if j % 6 == 0 and j != 0:
+                            file.write("\n")
+                        else:
+                            file.write(", ")
+                    file.write(f"\n\n*********** Average Score = [{score} = {sum_score[0] / count_score}, {sum_score[1] / count_score}] ***********\n\n")
+                file.close()
             else:
                 print("Error: Invalid setup")
             self.reset_ranks()
 
-            # Getting tree of possible card games
-            print("\n\n*********** All Possible Game States Tree ***********\n\n")
-
-            self.logger.view_tree(f"GameState - {setup[0]} {setup[1]} {i}.txt")
-
-            # MinMax Tree to get best move set
-            print("\n\n*********** MinMax Tree ***********\n\n")
-            games = self.logger.minmax()
-
-            for j, game in enumerate(games):
-                print(f"\n\n*********** Best Game for Tree: {j} ***********\n\n")
-                print(game)
-
-        print("Completed all setup options.")
+        print("Completed all setup options")
 
 
     def valid_setups(self):
@@ -64,27 +127,27 @@ class Evaluation:
 
         # Only need to consider one of these as they all result in the same setup
         # If player1 orders up player0
-        if self.valid_order_up(0):
+        if self.valid_order_up(1):
             # Check which cards to get rid of
             hand0 = self.discard()
             setup.append(('O', self.trump, hand0))
         # Elif player3 orders up player0
-        elif self.valid_order_up(2):
+        elif self.valid_order_up(3):
             # Check which cards to get rid of
             hand0 = self.discard()
             setup.append(('O', self.trump, hand0))
         # Elif player0 picks up the flipped card
-        elif self.valid_pick_up(3):
+        elif self.valid_pick_up(0):
             # Check which cards to get rid of
             hand0 = self.discard()
             setup.append(('O', self.trump, hand0))
 
         # If trump was turned down, go in a circle deciding trump
-        for i in range(3):
+        for i in range(4):
             options = self.make_trump(i)
             if options:
                 for option in options:
-                    setup.append(('M', option, []))
+                    setup.append(('M', option, i % 2))
         return setup
 
 
@@ -105,8 +168,6 @@ class Evaluation:
             self.win_hand(new_score, new_history)
             return
 
-        #print("Leader: ", new_lead)
-
         # Get lead player's legal moves
         lead_legal_moves = self.legal_moves(hands[lead], '')
 
@@ -114,20 +175,13 @@ class Evaluation:
             new_hands = copy.deepcopy(hands)
             new_lead = copy.deepcopy(lead)
             in_play.clear()
-            #print(f"Possible big recursive Jump Back: {trick} | Score: {score}")
-            #print(f"Leader Plays combination {i} - Player Index: ", new_lead % 4)
             in_play.append(move)
-            #new_hands[new_lead].remove(move)
-
-            # Update card ranks based on card led
-            new_cards = self.update_ranks(move)
 
             zero_index = 0
             # Determine legal moves of remaining players
             for k in range(new_lead + 1, new_lead + 4):
                 index = k % 4
-                player_legal_moves[index] = self.legal_moves(hands[index], move[0])
-                #print("Recorded Legal Moves: ", player_legal_moves[index])
+                player_legal_moves[index] = self.legal_moves(hands[index], move)
                 # For combination generation
                 to_follow_legal_moves[zero_index] = player_legal_moves[index]
                 zero_index += 1
@@ -138,9 +192,6 @@ class Evaluation:
                 new_hands = copy.deepcopy(hands)
                 new_lead = copy.deepcopy(lead)
                 new_player_legal_moves = copy.deepcopy(player_legal_moves)
-                #print(f"Possible small recursive Jump Back: {trick} | Score: {score}")
-                #print(f"Leader: {new_lead} | led: {move}")
-                #print("Combination: ", combination)
 
                 zero_index = 0
                 # Iterate through remaining plays to get all combinations of tricks
@@ -150,16 +201,15 @@ class Evaluation:
                     in_play.append(player_move)
                     zero_index += 1
 
-                #new_hands[index].remove(str(player_move))
                 for k, card in enumerate(in_play):
                     new_hands[(k + new_lead) % 4].remove(card)
 
+                # Update card ranks based on card led
+                new_cards = self.update_ranks(in_play[0])
                 # Evaluate the winner
                 winner = self.win_play(in_play)
-                #print("Winner: ", winner)
 
                 # Count win
-                #print("\nScoring Game")
                 if (winner + new_lead) % 2 == 0:
                     score0 = new_score[0] + 1
                     score1 = new_score[1]
@@ -171,7 +221,6 @@ class Evaluation:
                 current_history = [[in_play[0], new_lead], [in_play[1], new_lead + 1], [in_play[2], new_lead + 2], [in_play[3], new_lead + 3]]
                 # Check if hand is over
                 if sum(score) + 1 >= 5:
-                    #print("Finishing Game")
                     # Finish game and check if it should be logged
                     self.win_hand([score0, score1], new_history + [current_history])
                     return
@@ -181,10 +230,6 @@ class Evaluation:
                 for k in range(3):
                     in_play.pop(1)
 
-
-                #print("Recursive Call")
-                #print(f"New_Hands: {new_hands} | Trick: {trick + 1} | \nHistory: {new_history + [current_history]}\n\n\n")
-                # Call next trick
                 self.simulate(copy.deepcopy(new_hands), copy.deepcopy(new_lead), copy.deepcopy(new_history + [current_history]), copy.deepcopy(trick) + 1, copy.deepcopy([score0, score1]), copy.deepcopy(new_cards))
 
 
@@ -249,8 +294,9 @@ class Evaluation:
                     hand[i][1] += 13
 
         # Checking for the best hand makes (Excluding proposed trump suit)
+        # Skipping for now (Reduce value threshold to 60 if implementation is wanted)
         for value in hand:
-            if value[1] >= 60 and value[0] != hand[3]:
+            if value[1] >= 200 and value[0] != hand[3]:
                 options.append(value[0][0][0])
 
         return options
@@ -264,7 +310,7 @@ class Evaluation:
         low = ["", 10]
         low_trump = ["", 10]
 
-        for card in self.players[3]:
+        for card in self.players[0]:
             if card[0] != self.trump:
                 if card[0] == makes[0]:
                     hand[0].append(card)
@@ -280,8 +326,8 @@ class Evaluation:
             if len(suit) == 1:
                 for value in ranks:
                     if value[0] == suit[0][1]:
-                        #print("Saved lowest one suit: ", suit[0])
-                        low_one_suit = [suit[0], value[1]]
+                        if value[1] < low_one_suit[1]:
+                            low_one_suit = [suit[0], value[1]]
             # If there exists cards in suit
             elif len(suit) != 0:
                 for card in suit:
@@ -289,24 +335,23 @@ class Evaluation:
                     for value in ranks:
                         if value[0] == card[1]:
                             if value[1] < low[1]:
-                                #print(f"Saved lowest card: {card} | Value[1]: {value[1]}")
                                 if suit != hand[3]:
                                     low = [card, value[1]]
                                 else:
                                     low_trump = [card, value[1]]
 
         if low_one_suit[1] <= 4:
-            new_hand = list(self.players[3])
+            new_hand = list(self.players[0])
             new_hand.append(self.trump_flipped)
             new_hand.remove(str(low_one_suit[0]))
             return new_hand
         elif low[1] < 8:
-            new_hand = list(self.players[3])
+            new_hand = list(self.players[0])
             new_hand.append(self.trump_flipped)
             new_hand.remove(str(low[0]))
             return new_hand
         else:
-            new_hand = list(self.players[3])
+            new_hand = list(self.players[0])
             new_hand.append(self.trump_flipped)
             new_hand.remove(str(low_trump[0]))
             return new_hand
@@ -316,15 +361,44 @@ class Evaluation:
         if trump == '':
             return hand
 
+        # Determine the left bower based on the trump suit
+        left_bower = self.get_left_bower(self.trump)
+
+        if trump == left_bower:
+            trump = self.trump
+        else:
+            trump = trump[0]
+
         legal_moves = []
-        for card in hand:
-            if card[0] == trump:
-                legal_moves.append(card)
+        if trump == self.trump:
+            for card in hand:
+                if card[0] == trump or card == left_bower:
+                    legal_moves.append(card)
+        else:
+            for card in hand:
+                if card[0] == trump and card != left_bower:
+                    legal_moves.append(card)
 
         if len(legal_moves) == 0:
             legal_moves = hand
 
         return legal_moves
+
+
+    def get_left_bower(self, trump):
+        # Hearts: Left bower is Jack of Diamonds
+        if trump == 'H':
+            return 'DJ'
+        # Diamonds: Left bower is Jack of Hearts
+        elif trump == 'D':
+            return 'HJ'
+        # Spades: Left bower is Jack of Clubs
+        elif trump == 'S':
+            return 'CJ'
+        # Clubs: Left bower is Jack of Spades
+        elif trump == 'C':
+            return 'SJ'
+        return None
 
 
     # Converts all hand's trump into the highest rank
@@ -363,7 +437,9 @@ class Evaluation:
         # Update ranks based on card led
         for card in self.cards.keys():
             # If suit is not already boosted
-            if self.cards[card] < 7 and card[0] == led:
+            if self.cards[card] > 7 and card[0] == led:
+                continue
+            elif self.cards[card] < 7 and card[0] == led:
                 self.cards[card] += 6
             # Devaluing past suits
             elif self.cards[card] > 6 and card[0] != self.trump and self.cards[card] != 19:
@@ -383,7 +459,6 @@ class Evaluation:
     def win_play(self, in_play):
         values = [0, 0, 0, 0]
         for i, card in enumerate(in_play):
-            #print("Checking Cards Win: ", card)
             for value in self.cards.keys():
                 if card == value:
                     values[i] = self.cards[value]
@@ -391,20 +466,14 @@ class Evaluation:
 
 
     def win_hand(self, score, history):
-        #print("Checking hand Winner")
         # Checking if hand is won
         if score[0] >= 3 and score[1] > 0:
-            #print("Offense just won")
-            # Log its
+            # Log it
             self.logger.log_hand(self.trump, 0, score, history)
         elif score[0] == 5:
-            #print('Offense sweeped')
             # Log it
             self.logger.log_hand(self.trump, 0, score, history)
         elif score[1] >= 3:
-            #print("Defense won")
-            # Checking if current win was better than previous win
-            # Come up with better metric for this, only going to log one defensive win
             # Log it
             self.logger.log_hand(self.trump, 1, score, history)
 
